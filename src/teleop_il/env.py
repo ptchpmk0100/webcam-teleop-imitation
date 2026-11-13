@@ -54,6 +54,11 @@ class Env:
         self._hold_steps = 0
         self._succeeded = False
 
+    @property
+    def action_bounds(self) -> tuple[np.ndarray, np.ndarray]:
+        """Lower and upper joint-target limits (5 arm joints plus the gripper)."""
+        return self._ctrl_range[:, 0].copy(), self._ctrl_range[:, 1].copy()
+
     def _obs(self) -> dict:
         return {
             "joint_pos": self.data.qpos[self._arm_qadr].copy(),
