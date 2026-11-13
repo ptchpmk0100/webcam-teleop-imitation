@@ -1,0 +1,15 @@
+# Local-only research inputs: employer posting texts are not ours to republish
+docs/research/local/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Data and model artefacts (large; publish via releases later if needed)
+data/
+*.onnx
+*.pt
+*.mp4

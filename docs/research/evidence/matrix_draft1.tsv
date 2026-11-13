@@ -1,0 +1,55 @@
+H	11	Python	 3d_aero_gmbh_worki bmw_group_intern_r daimler_truck_ag_p fau_faps_demonstra fau_mad_gaze_triad fehrer_humanoid_ro fehrer_pur_trimmin heidelberger_druck karl_storz_praktik naxon_robotics_rob neura_robotics_rob
+H	9	C++	 daimler_truck_ag_p fau_faps_demonstra fehrer_humanoid_ro fehrer_pur_trimmin heidelberger_druck imfusion_gmbh_work karl_storz_praktik mesta_robotics_pra neura_robotics_rob
+H	9	ROS / ROS 2	 bmw_group_intern_r daimler_truck_ag_p fau_faps_demonstra fehrer_humanoid_ro fehrer_pur_trimmin mesta_robotics_pra naxon_robotics_rob neura_robotics_dat neura_robotics_dat
+H	10	Computer vision / Bildverarbeitung	 3d_aero_gmbh_worki daimler_truck_ag_p fau_faps_demonstra fau_mad_gaze_triad fau_sparc_endoscop heidelberger_druck imfusion_gmbh_work karl_storz_praktik naxon_robotics_rob neura_robotics_rob
+H	6	Machine learning	 daimler_truck_ag_p fau_sparc_deformab imfusion_gmbh_work neura_robotics_dat neura_robotics_dat neura_robotics_rob
+H	0	Deep learning / neural networks	
+H	2	PyTorch	 daimler_truck_ag_p neura_robotics_rob
+H	1	TensorFlow	 neura_robotics_rob
+H	1	OpenCV	 karl_storz_praktik
+H	6	Simulation	 bmw_group_intern_r daimler_truck_ag_p imfusion_gmbh_work neura_robotics_dat neura_robotics_dat neura_robotics_rob
+H	2	Named simulators (Isaac Sim, MuJoCo, Gazebo, Omniverse)	 bmw_group_intern_r neura_robotics_rob
+H	3	Blender / CAD	 3d_aero_gmbh_worki bmw_group_intern_r naxon_robotics_rob
+H	4	LiDAR	 fau_faps_demonstra fehrer_humanoid_ro fehrer_pur_trimmin naxon_robotics_rob
+H	4	Camera / RGB data	 daimler_truck_ag_p fehrer_humanoid_ro fehrer_pur_trimmin naxon_robotics_rob
+H	4	3D / point clouds	 3d_aero_gmbh_worki fau_faps_demonstra fau_sparc_deformab naxon_robotics_rob
+H	6	Sensors / sensor fusion	 3d_aero_gmbh_worki fau_faps_demonstra fau_sparc_deformab naxon_robotics_rob neura_robotics_dat neura_robotics_dat
+H	2	Calibration	 neura_robotics_dat neura_robotics_dat
+H	6	Detection / recognition / tracking	 daimler_truck_ag_p fau_faps_demonstra naxon_robotics_rob neura_robotics_dat neura_robotics_dat neura_robotics_rob
+H	1	Segmentation	 fau_sparc_deformab
+H	0	Pose estimation	
+H	3	SLAM / navigation	 fau_faps_demonstra naxon_robotics_rob neura_robotics_rob
+H	5	Manipulation / grasping	 daimler_truck_ag_p karl_storz_praktik neura_robotics_dat neura_robotics_dat neura_robotics_rob
+H	4	Teleoperation / data collection	 daimler_truck_ag_p neura_robotics_dat neura_robotics_dat neura_robotics_rob
+H	3	Robot learning (imitation, VLA, foundation models)	 daimler_truck_ag_p naxon_robotics_rob neura_robotics_rob
+H	0	Reinforcement learning	
+H	1	LLM / NLP / language models	 fau_sparc_endoscop
+H	1	Fine-tuning (LoRA, PEFT)	 neura_robotics_rob
+H	1	Linux	 daimler_truck_ag_p
+H	2	Git	 daimler_truck_ag_p imfusion_gmbh_work
+H	0	Docker / containers	
+H	1	CI / automated testing	 imfusion_gmbh_work
+H	2	Cloud / GPU compute	 fau_mad_gaze_triad neura_robotics_rob
+H	1	Industrial robots (KUKA, FANUC, UR)	 daimler_truck_ag_p
+H	2	Robot programming / commissioning	 fehrer_humanoid_ro fehrer_pur_trimmin
+H	5	Human-robot interaction / collaboration	 fau_faps_demonstra fehrer_humanoid_ro neura_robotics_dat neura_robotics_dat neura_robotics_rob
+H	5	Humanoid robots	 daimler_truck_ag_p fehrer_humanoid_ro mesta_robotics_pra neura_robotics_dat neura_robotics_dat
+H	3	Mobile / autonomous robots	 fau_faps_demonstra karl_storz_praktik naxon_robotics_rob
+H	11	Testing / validation	 3d_aero_gmbh_worki daimler_truck_ag_p fau_faps_demonstra fehrer_humanoid_ro fehrer_pur_trimmin imfusion_gmbh_work mesta_robotics_pra naxon_robotics_rob neura_robotics_dat neura_robotics_dat neura_robotics_rob
+H	3	Deployment	 fau_faps_demonstra naxon_robotics_rob neura_robotics_rob
+H	2	Datasets / annotation	 fau_mad_gaze_triad neura_robotics_rob
+H	5	Hardware / electronics / embedded	 mesta_robotics_pra naxon_robotics_rob neura_robotics_dat neura_robotics_dat neura_robotics_rob
+H	0	Control engineering	
+H	2	Inspection / quality	 heidelberger_druck naxon_robotics_rob
+H	5	Medical / surgical robotics	 fau_faps_demonstra fau_sparc_deformab fau_sparc_endoscop imfusion_gmbh_work karl_storz_praktik
+G	11	Artificial intelligence (AI / KI)	 3d_aero_gmbh_worki bmw_group_intern_r daimler_truck_ag_p fau_sparc_deformab fau_sparc_endoscop fehrer_humanoid_ro fehrer_pur_trimmin naxon_robotics_rob neura_robotics_dat neura_robotics_dat neura_robotics_rob
+G	15	Robotics (generic)	 3d_aero_gmbh_worki bmw_group_intern_r daimler_truck_ag_p fau_faps_demonstra fau_sparc_deformab fau_sparc_endoscop fehrer_humanoid_ro fehrer_pur_trimmin imfusion_gmbh_work karl_storz_praktik mesta_robotics_pra naxon_robotics_rob neura_robotics_dat neura_robotics_dat neura_robotics_rob
+G	12	German language	 3d_aero_gmbh_worki bmw_group_intern_r fau_faps_demonstra fehrer_humanoid_ro fehrer_pur_trimmin heidelberger_druck imfusion_gmbh_work mesta_robotics_pra naxon_robotics_rob neura_robotics_dat neura_robotics_dat neura_robotics_rob
+G	11	English language	 3d_aero_gmbh_worki bmw_group_intern_r daimler_truck_ag_p fehrer_humanoid_ro fehrer_pur_trimmin heidelberger_druck imfusion_gmbh_work naxon_robotics_rob neura_robotics_dat neura_robotics_dat neura_robotics_rob
+G	5	MS Office / Excel / PowerPoint	 bmw_group_intern_r fehrer_humanoid_ro fehrer_pur_trimmin heidelberger_druck neura_robotics_dat
+G	8	Teamwork / collaboration	 bmw_group_intern_r fehrer_humanoid_ro heidelberger_druck imfusion_gmbh_work karl_storz_praktik neura_robotics_dat neura_robotics_dat neura_robotics_rob
+G	5	Communication skills	 bmw_group_intern_r fau_sparc_endoscop neura_robotics_dat neura_robotics_dat neura_robotics_rob
+G	9	Hands-on mindset	 3d_aero_gmbh_worki daimler_truck_ag_p imfusion_gmbh_work karl_storz_praktik mesta_robotics_pra naxon_robotics_rob neura_robotics_dat neura_robotics_dat neura_robotics_rob
+G	8	Independent / self-reliant	 daimler_truck_ag_p fau_faps_demonstra heidelberger_druck imfusion_gmbh_work karl_storz_praktik naxon_robotics_rob neura_robotics_dat neura_robotics_rob
+G	6	Analytical / problem-solving	 bmw_group_intern_r daimler_truck_ag_p imfusion_gmbh_work neura_robotics_dat neura_robotics_dat neura_robotics_rob
+G	8	Documentation / presentations / reports	 daimler_truck_ag_p fau_faps_demonstra fehrer_humanoid_ro fehrer_pur_trimmin imfusion_gmbh_work naxon_robotics_rob neura_robotics_dat neura_robotics_dat

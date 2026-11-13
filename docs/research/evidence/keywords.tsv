@@ -1,0 +1,55 @@
+H	Python	\bpython
+H	C++	c\+\+
+H	ROS / ROS 2	\bros ?2?\b|robot operating system
+H	Computer vision / Bildverarbeitung	computer[- ]vision|machine[- ]vision|bildverarbeitung|image processing|bildanalyse|vision[- ](language|system|based)
+H	Machine learning	machine[- ]learning|maschinell(es|en) lern|\bml\b|ml-
+H	Deep learning / neural networks	deep[- ]learning|neural network|neuronale
+H	PyTorch	pytorch
+H	TensorFlow	tensorflow
+H	OpenCV	opencv
+H	Simulation	simulation|simulator|simulier
+H	Named simulators (Isaac Sim, MuJoCo, Gazebo, Omniverse)	isaac ?sim|mujoco|gazebo|omniverse
+H	Blender / CAD	blender|\bcad\b
+H	LiDAR	lidar
+H	Camera / RGB data	camera|kamera|\brgb
+H	3D / point clouds	\b3d\b|point[- ]cloud|punktwolke
+H	Sensors / sensor fusion	sensor
+H	Calibration	calibrat|kalibrier
+H	Detection / recognition / tracking	detection|detektion|erkennung|recognition|tracking
+H	Segmentation	segment
+H	Pose estimation	\bpose\b|pose estimation|posen
+H	SLAM / navigation	\bslam\b|nav2|navigation
+H	Manipulation / grasping	manipulat|grasp|greif
+H	Teleoperation / data collection	teleop|data collection|datenerfassung|data acquisition
+H	Robot learning (imitation, VLA, foundation models)	imitation learning|\bvla|vision-language-action|foundation model|lerobot|openvla
+H	Reinforcement learning	reinforcement learning|\brl\b
+H	LLM / NLP / language models	\bllms?\b|large language model|natural[- ]language|\bnlp\b|language model|\basr\b
+H	Fine-tuning (LoRA, PEFT)	fine-tun|\blora\b|\bpeft\b
+H	Linux	linux|ubuntu
+H	Git	\bgit\b|github|gitlab
+H	Docker / containers	docker|container
+H	CI / automated testing	\bci\b|ci/cd|continuous integration|automated test|unit test
+H	Cloud / GPU compute	\baws\b|\bgcp\b|cloud|\bgpu
+H	Industrial robots (KUKA, FANUC, UR)	kuka|fanuc|universal robots|\bur\b|industrieroboter|industrial robot
+H	Robot programming / commissioning	robot(er)?[- ]?programm|programming.{0,40}robot|commissioning|inbetriebnahme
+H	Human-robot interaction / collaboration	human-robot|mensch-roboter|\bhri\b|human-machine|cobot
+H	Humanoid robots	humanoid
+H	Mobile / autonomous robots	mobile robot|autonomous|autonom|\bamr\b
+H	Testing / validation	\btests?\b|testing|validat|validier|test series
+H	Deployment	deploy
+H	Datasets / annotation	dataset|datensatz|annotation|label(l)?ing
+H	Hardware / electronics / embedded	hardware|embedded|electronic|elektronik|wiring|verkabel
+H	Control engineering	regelungstechnik|\bregelung|control (engineering|system|algorithm|theory)|controller
+H	Inspection / quality	inspection|inspektion|qualitätsprüf|quality (control|inspection|assurance)
+H	Medical / surgical robotics	surgical|medical|medizin|chirurg|clinical
+G	Artificial intelligence (AI / KI)	\bai\b|artificial intelligence|künstliche intelligenz|\bki\b|ki-
+G	Robotics (generic)	robotic|robotik|\brobots?\b|roboter
+G	German language	german|deutsch
+G	English language	english|englisch
+G	MS Office / Excel / PowerPoint	ms office|excel|powerpoint|microsoft office
+G	Teamwork / collaboration	teamwork|team player|teamfähig|collaborat|zusammenarbeit
+G	Communication skills	communication|kommunikation
+G	Hands-on mindset	hands-on|hands on|praktisch
+G	Independent / self-reliant	independent|selbstständig|selbständig|self-reliant|eigenverantwort
+G	Analytical / problem-solving	analytical|analytisch|problem-solving|problemlös
+G	Documentation / presentations / reports	document|dokumentation|presentation|präsentation|report
