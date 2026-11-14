@@ -1,7 +1,10 @@
-.PHONY: setup test
+.PHONY: setup test demo
 setup:
 	uv sync
 	./scripts/fetch_assets.sh
 
 test: setup
 	env -u PYTHONPATH uv run pytest
+
+demo: setup
+	env -u PYTHONPATH uv run python -m teleop_il.live

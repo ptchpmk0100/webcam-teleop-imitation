@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Webcam hand-teleop of a simulated arm in MuJoCo, demonstrations, and an imitation policy."
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "mediapipe>=1.2.3",
     "mink>=1.4.0",
     "mujoco==4.0.1",
     "numpy>=2.0",
