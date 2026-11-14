@@ -23,12 +23,24 @@ HOME_GRIPPER = 0.7277
 ASSET_DIR = Path(__file__).resolve().parents[2] / "assets" / "mujoco_menagerie" / "robotstudio_so101"
 
 
+POLICY_CAMERA = "policy"
+IMAGE_SIZE = (96, 128)                # height, width of policy images (4:3 like the webcam)
+
 ARM_JOINTS = ("shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper")
 
 
 def build_model(with_cube: bool = True) -> mujoco.MjModel:
     spec = mujoco.MjSpec.from_file(str(ASSET_DIR / "so101.xml"))
-    spec.worldbody.add_geom(name="floor", type=mujoco.mjtGeom.mjGEOM_PLANE, size=[0, 0, 0.05])
+    spec.worldbody.add_geom(name="floor", type=mujoco.mjtGeom.mjGEOM_PLANE, size=[0, 0, 0.05], rgba=[0.62, 0.6, 0.55, 1])
+    # A top light (visual only): with the headlight alone the policy images were nearly flat (pixel std 7 of 255);
+    # with it they reach about 36 and the arm casts a shadow, a height cue.
+    spec.worldbody.add_light(pos=[0.2, 0.0, 1.0], dir=[0.0, 0.0, -1.0], diffuse=[0.7, 0.7, 0.7])
+    # The image policy's camera (ticket 08): in front of the arm and to its right, so the whole arm, both corners of
+    # the spawn rectangle and a lifted cube stay in view (a straight-on view cut the gripper off when it rose).
+    # Part of the scene, so the C++ side renders the same view.
+    cam = spec.worldbody.add_camera(name=POLICY_CAMERA, pos=[0.45, -0.30, 0.35], fovy=55.0)
+    cam.alt.type = mujoco.mjtOrientation.mjORIENTATION_XYAXES
+    cam.alt.xyaxes = [0.7936, 0.6084, 0.0, -0.3858, 0.5032, 0.7732]    # looks at (0.22, 0, 0.04)
     if not with_cube:
         return spec.compile()
     cube = spec.worldbody.add_body(name="cube", pos=[0.2, 0.0, CUBE_HALF])
@@ -61,6 +73,23 @@ class Env:
     def ee_position(self) -> np.ndarray:
         """Where the gripper frame really is now, read from the simulation (not the commanded target)."""
         return self.data.site_xpos[self._ee_site].copy()
+
+    def render(self, height: int = IMAGE_SIZE[0], width: int = IMAGE_SIZE[1]) -> np.ndarray:
+        """The policy camera's view of the current state, (height, width, 3) uint8 RGB. Needs an OpenGL backend
+        (MUJOCO_GL=egl works without a display)."""
+        key = (height, width)
+        if getattr(self, "_renderer_key", None) != key:
+            self._renderer = mujoco.Renderer(self.model, height, width)
+            self._renderer_key = key
+            self._render_data = mujoco.MjData(self.model)
+        # After mj_step the body positions are those of the state before the last integration (one 5 ms substep
+        # stale). Recompute them from the current state on a scratch copy, as the dataset render does from stored
+        # states, so evaluation images equal training images bit for bit and the simulation itself is untouched.
+        d = self._render_data
+        d.qpos[:], d.qvel[:] = self.data.qpos, self.data.qvel
+        mujoco.mj_forward(self.model, d)
+        self._renderer.update_scene(d, camera=POLICY_CAMERA)
+        return self._renderer.render().copy()
 
     def cube_position(self) -> np.ndarray:
         """Where the cube centre is now, read from the simulation (the grasp assist uses it; a policy never does)."""
