@@ -8,7 +8,7 @@ import numpy as np
 from teleop_il.ik import GRIPPER_CLOSED, GRIPPER_OPEN, ArmController
 
 _WRIST, _MIDDLE_MCP, _THUMB_TIP, _INDEX_TIP = 0, 9, 4, 8
-# Palm segments (landmark pairs) whose image length over camera-plane world length gives inverse distance to the camera.
+# Palm segments (landmark pairs) whose summed image length is the depth cue.
 _PALM_SEGMENTS = ((0, 9), (5, 17), (0, 5), (0, 17))
 
 
@@ -103,15 +103,18 @@ class Teleop:
         self._depth_history: list[float] = []
 
     def _features(self, frame: HandFrame) -> np.ndarray:
-        """(u, v, inverse distance). The depth cue is palm image length over palm length across the image plane, so
-        tilting the hand does not change it: the world landmarks say how much of each segment points at the camera."""
-        img, world = frame.image_landmarks, frame.world_landmarks
-        seen = perp = 0.0
+        """(u, v, depth cue). The cue is the total image length of four palm segments: bigger = closer to the camera.
+
+        A first version divided by the segments' length across the image plane taken from MediaPipe's world landmarks, to
+        cancel hand tilt. On Khoi's session log that was 7 times noisier than the plain image length (noise 0.76 against
+        0.11 of the median, spikes up to 5x) and the tilt estimate sat at its clip most of the time, so it was dropped.
+        Cost: tilting the palm by 45 degrees moves the arm about 6 cm."""
+        img = frame.image_landmarks
+        seen = 0.0
         for a, b in _PALM_SEGMENTS:
             di = img[b, :2] - img[a, :2]
             seen += float(np.hypot(di[0] * self._cfg.image_aspect, di[1]))
-            perp += float(np.hypot(*(world[b, :2] - world[a, :2])))
-        return np.array([img[_WRIST, 0], img[_WRIST, 1], seen / max(perp, 1e-6)])
+        return np.array([img[_WRIST, 0], img[_WRIST, 1], seen])
 
     def _smooth(self, feats: np.ndarray, dt: float) -> np.ndarray:
         self._depth_history = (self._depth_history + [float(feats[2])])[-self._cfg.depth_median_frames:]

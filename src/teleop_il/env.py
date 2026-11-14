@@ -55,6 +55,7 @@ class Env:
         self._ee_site = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE, "gripperframe")
         self._hold_needed = round(LIFT_HOLD_SECONDS / CONTROL_DT)
         self._hold_steps = 0
+        self._sub_count = 0
         self._succeeded = False
 
     def ee_position(self) -> np.ndarray:
@@ -83,19 +84,37 @@ class Env:
         self.data.qpos[self._cube_qadr:self._cube_qadr + 7] = [x, y, CUBE_HALF, 1, 0, 0, 0]
         mujoco.mj_forward(self.model, self.data)
         self._hold_steps = 0
+        self._sub_count = 0
         self._succeeded = False
         return self._obs()
 
-    def step(self, action) -> dict:
+    def _set_ctrl(self, action) -> None:
         action = np.asarray(action, dtype=float)
         assert action.shape == (6,), "action is 5 arm joint targets plus the gripper target"
         self.data.ctrl[:] = np.clip(action, self._ctrl_range[:, 0], self._ctrl_range[:, 1])
+
+    def _physics_step(self) -> None:
+        """One physics timestep; every `_substeps` of them close one control step (the success hold counts those)."""
+        mujoco.mj_step(self.model, self.data)
+        self._sub_count += 1
+        if self._sub_count == self._substeps:
+            self._sub_count = 0
+            self._hold_steps = self._hold_steps + 1 if self.lift_height() > LIFT_THRESHOLD else 0
+            if self._hold_steps >= self._hold_needed:
+                self._succeeded = True
+
+    def step(self, action) -> dict:
+        """One 20 Hz control step: hold the joint targets for 50 ms of physics."""
+        self._set_ctrl(action)
         for _ in range(self._substeps):
-            mujoco.mj_step(self.model, self.data)
-        self._hold_steps = self._hold_steps + 1 if self.lift_height() > LIFT_THRESHOLD else 0
-        if self._hold_steps >= self._hold_needed:
-            self._succeeded = True
+            self._physics_step()
         return self._obs()
+
+    def substep(self, action) -> None:
+        """One physics timestep (5 ms) with the same joint targets. Ten of them equal one `step`; the live window uses
+        this so the arm moves a little every refresh instead of jumping 50 ms at a time."""
+        self._set_ctrl(action)
+        self._physics_step()
 
     def success(self) -> bool:
         """True once the cube bottom has stayed more than 5 cm above the table for 1 s in a row."""
@@ -137,5 +156,6 @@ class Env:
         d.ctrl[:] = snapshot["ctrl"]
         d.qacc_warmstart[:] = snapshot["qacc_warmstart"]
         self._hold_steps = snapshot["hold_steps"]
+        self._sub_count = 0                                      # snapshots are taken between control steps
         self._succeeded = snapshot["succeeded"]
         mujoco.mj_forward(self.model, d)

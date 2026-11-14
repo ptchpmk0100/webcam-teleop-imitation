@@ -171,3 +171,35 @@ def test_the_end_effector_position_is_read_from_the_simulation():
     from teleop_il.env import HOME_ARM, HOME_GRIPPER
     env = Env(); env.reset(0)
     assert env.ee_position() == pytest.approx(fk([*HOME_ARM, HOME_GRIPPER])[0], abs=0.002)
+
+
+# ---- live display: advance physics in small slices so the window moves smoothly, with identical results ----
+
+def test_ten_physics_substeps_give_exactly_the_same_state_as_one_control_step():
+    a, b = Env(), Env()
+    a.reset(seed=4); b.reset(seed=4)
+    action = [0.2, -0.3, 0.3, 1.5, 1.6, 0.0]
+    a.step(action)
+    for _ in range(10):
+        b.substep(action)
+    assert np.array_equal(a.data.qpos, b.data.qpos) and a.data.time == pytest.approx(b.data.time)
+
+
+def test_a_substep_advances_time_by_one_physics_timestep_only():
+    env = Env(); env.reset(seed=0)
+    t0 = env.data.time
+    env.substep([0.0] * 6)
+    assert env.data.time - t0 == pytest.approx(env.model.opt.timestep)
+
+
+def test_the_success_hold_counter_is_the_same_whether_time_advances_in_steps_or_substeps():
+    a, b = Env(), Env()
+    for env in (a, b):
+        env.reset(seed=0)
+        env.place_cube([0.2, 0.1, 0.3])                     # high above the table for a few control steps
+    action = list(a.snapshot()["ctrl"])
+    for _ in range(3):
+        a.step(action)
+        for _ in range(10):
+            b.substep(action)
+    assert a.snapshot()["hold_steps"] == b.snapshot()["hold_steps"] == 3

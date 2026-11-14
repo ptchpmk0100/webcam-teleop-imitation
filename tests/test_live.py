@@ -210,3 +210,20 @@ def test_the_session_log_gets_the_landmarks_of_every_detected_frame():
                 engaged=lambda: True, log=log)
     assert not np.isnan(log.last_image).any()                # the last frame had a hand
     assert np.isnan(log.image_at(1)).all() and not np.isnan(log.image_at(0)).any()   # frame 2 (index 1) had none
+
+
+def test_the_simulation_window_is_refreshed_with_a_smooth_amount_of_simulated_time_each_frame():
+    """Stepping in 50 ms bursts against a 33 ms camera frame made the arm judder: some refreshes moved it, some did not."""
+    clock = FakeClock()
+    env = Env(); env.reset(0)
+    times = []
+    class Viewer:
+        def is_running(self): return True
+        def lock(self):
+            import contextlib
+            return contextlib.nullcontext()
+        def sync(self): times.append(env.data.time)
+    run_session(FakeCamera(clock), FakeTracker(), Teleop(), env, secs=2.0, clock=clock, engaged=lambda: True,
+                viewer=Viewer())
+    steps = np.diff(times[5:])
+    assert steps.min() >= 0.025 and steps.max() <= 0.045      # about 33 ms of simulated time per refresh, never 0 or 50 ms

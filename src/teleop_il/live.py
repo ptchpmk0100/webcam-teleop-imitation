@@ -13,7 +13,6 @@ from pathlib import Path
 
 import numpy as np
 
-from teleop_il.env import CONTROL_DT
 from teleop_il.teleop import HandFrame
 
 MODEL_PATH = Path(__file__).resolve().parents[2] / "assets" / "models" / "hand_landmarker.task"
@@ -68,13 +67,13 @@ def run_session(camera, tracker, teleop, env, *, secs: float, clock, engaged, vi
             frame = landmarks_to_frame(b - t0, result, engaged(), key_closed)
             out = teleop.update(frame)
             d = clock()
-            while sim_t + CONTROL_DT <= clock() - t0:
+            while sim_t + env.model.opt.timestep <= clock() - t0:     # physics in 5 ms slices: smooth motion, not 50 ms jumps
                 if viewer is not None:
                     with viewer.lock():
-                        env.step(out.joint_targets)
+                        env.substep(out.joint_targets)
                 else:
-                    env.step(out.joint_targets)
-                sim_t += CONTROL_DT
+                    env.substep(out.joint_targets)
+                sim_t += env.model.opt.timestep
             if viewer is not None:
                 viewer.sync()
             e = clock()
@@ -179,14 +178,17 @@ class LatestFrameCamera:
 class HandTracker:
     """MediaPipe HandLandmarker (pretrained), one hand, CPU."""
 
-    def __init__(self, model_path: Path = MODEL_PATH) -> None:
+    def __init__(self, model_path: Path = MODEL_PATH, confidence: float = 0.3) -> None:
         import mediapipe as mp
         from mediapipe.tasks import python as mpp
         from mediapipe.tasks.python import vision
         self._mp, self._cv2 = mp, __import__("cv2")
         options = vision.HandLandmarkerOptions(
             base_options=mpp.BaseOptions(model_asset_path=str(model_path), delegate=mpp.BaseOptions.Delegate.CPU),
-            running_mode=vision.RunningMode.VIDEO, num_hands=1)
+            running_mode=vision.RunningMode.VIDEO, num_hands=1,
+            # defaults are 0.5; half of the dropouts in Khoi's log started while the fingers were pinched
+            min_hand_detection_confidence=confidence, min_hand_presence_confidence=confidence,
+            min_tracking_confidence=confidence)
         self._landmarker = vision.HandLandmarker.create_from_options(options)
 
     def detect(self, bgr, timestamp_ms: int):
