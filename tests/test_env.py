@@ -164,3 +164,10 @@ def test_targets_outside_the_joint_range_are_clipped(env):
     for _ in range(20):
         obs = env.step(target)
     assert obs["joint_pos"][0] <= 1.92 + 1e-6
+
+
+def test_the_end_effector_position_is_read_from_the_simulation():
+    from helpers import fk
+    from teleop_il.env import HOME_ARM, HOME_GRIPPER
+    env = Env(); env.reset(0)
+    assert env.ee_position() == pytest.approx(fk([*HOME_ARM, HOME_GRIPPER])[0], abs=0.002)

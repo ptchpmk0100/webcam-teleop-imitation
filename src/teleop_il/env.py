@@ -52,9 +52,14 @@ class Env:
         self._ctrl_range = self.model.actuator_ctrlrange.copy()
         self._home = np.array([*HOME_ARM, HOME_GRIPPER])
         self._cube_dofadr = int(self.model.body_dofadr[cube_body])
+        self._ee_site = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE, "gripperframe")
         self._hold_needed = round(LIFT_HOLD_SECONDS / CONTROL_DT)
         self._hold_steps = 0
         self._succeeded = False
+
+    def ee_position(self) -> np.ndarray:
+        """Where the gripper frame really is now, read from the simulation (not the commanded target)."""
+        return self.data.site_xpos[self._ee_site].copy()
 
     @property
     def action_bounds(self) -> tuple[np.ndarray, np.ndarray]:

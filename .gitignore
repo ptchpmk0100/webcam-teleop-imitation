@@ -16,3 +16,4 @@ data/
 
 # Third-party model assets fetched by scripts/fetch_assets.sh
 assets/
+runs/

@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from helpers import Clock, fk, hand
+from helpers import PALM, Clock, fk, hand, pinhole_hand
 from teleop_il.ik import ArmController
 from teleop_il.teleop import Teleop
 
@@ -179,3 +179,74 @@ def test_a_hand_far_outside_the_range_keeps_the_arm_inside_the_workspace_box():
     pos, _ = fk(out.joint_targets)
     assert -0.18 <= pos[1] <= 0.18                         # box is y in [-0.17, 0.17]
     assert pos[2] <= 0.26                                  # box is z up to 0.25
+
+
+# ---- reported by Khoi at G5: the arm lagged the hand and forward/back moved when the hand only tilted ----
+
+def test_a_quick_hand_move_is_followed_within_100_ms():
+    tp, clock, start = engaged_teleop()
+    for _ in range(3):                                     # three frames = 100 ms after the hand jumps 0.1 image widths
+        out = tp.update(hand(clock.t(), u=0.4))
+    pos, _ = fk(out.joint_targets)
+    assert (pos - start)[1] < -0.9 * 0.08                  # at least 90 percent of the 8 cm
+
+
+def pinhole_engaged(**kw):
+    tp, clock = Teleop(), Clock()
+    for _ in range(3):                                     # clutch released, hand already at its place
+        tp.update(pinhole_hand(clock.t(), engage=False, **kw))
+    out = None
+    for _ in range(40):
+        out = tp.update(pinhole_hand(clock.t(), **kw))
+    return tp, clock, fk(out.joint_targets)[0]
+
+
+def test_moving_the_flat_hand_from_50_cm_to_45_cm_from_the_camera_moves_the_arm_5_cm_forward():
+    tp, clock, start = pinhole_engaged(distance=0.5)
+    for _ in range(40):
+        out = tp.update(pinhole_hand(clock.t(), distance=0.45))
+    pos, _ = fk(out.joint_targets)
+    assert (pos - start)[0] == pytest.approx(0.0556, abs=0.01)     # 0.5 / 0.45 - 1 = 11.1 percent, times 0.5 m
+
+
+@pytest.mark.parametrize("pitch,yaw", [(45, 0), (0, 45), (-40, 30), (-45, 0)])
+def test_tilting_the_hand_moves_the_arm_only_as_far_as_the_palm_really_moved_towards_the_camera(pitch, yaw):
+    """A tilt about the wrist brings the palm centre slightly nearer or further; apart from that the arm must not move.
+    The old cue (image length of one segment) wrongly moved the arm 7 to 14 cm for these tilts."""
+    tp, clock, start = pinhole_engaged(distance=0.5)
+    for _ in range(60):
+        out = tp.update(pinhole_hand(clock.t(), distance=0.5, pitch_deg=pitch, yaw_deg=yaw))
+    pos, _ = fk(out.joint_targets)
+    a, b = np.radians(pitch), np.radians(yaw)               # palm centre depth from the 3D model, not from the code
+    rot = (np.array([[np.cos(b), 0, np.sin(b)], [0, 1, 0], [-np.sin(b), 0, np.cos(b)]])
+           @ np.array([[1, 0, 0], [0, np.cos(a), -np.sin(a)], [0, np.sin(a), np.cos(a)]]))
+    centre = 0.5 + np.mean([(rot @ np.array(p))[2] for p in PALM.values()])
+    assert (pos - start)[0] == pytest.approx(0.5 * (0.5 / centre - 1), abs=0.02)
+
+
+# ---- gripper key: the pinch can be hidden from the camera, so a key closes the gripper too ----
+
+def test_the_gripper_key_closes_the_gripper_even_when_the_pinch_is_open():
+    tp, clock = Teleop(), Clock()
+    out = tp.update(hand(clock.t(), pinch_m=0.08, close_gripper=True))
+    assert out.joint_targets[5] == pytest.approx(CLOSED)
+
+
+def test_releasing_the_gripper_key_opens_it_again_when_the_pinch_is_open():
+    tp, clock = Teleop(), Clock()
+    tp.update(hand(clock.t(), pinch_m=0.08, close_gripper=True))
+    out = tp.update(hand(clock.t(), pinch_m=0.08, close_gripper=False))
+    assert out.joint_targets[5] == pytest.approx(OPEN)
+
+
+def test_a_pinch_still_closes_the_gripper_without_the_key():
+    tp, clock = Teleop(), Clock()
+    out = tp.update(hand(clock.t(), pinch_m=0.02, close_gripper=False))
+    assert out.joint_targets[5] == pytest.approx(CLOSED)
+
+
+def test_the_output_reports_the_pinch_gap_and_the_target_for_the_live_overlay_and_log():
+    tp, clock, _ = engaged_teleop()
+    out = tp.update(hand(clock.t(), pinch_m=0.037, u=0.4))
+    assert out.info["pinch_gap_m"] == pytest.approx(0.037)
+    assert out.info["target"].shape == (3,) and out.info["raw"].shape == (3,) and out.info["filtered"].shape == (3,)

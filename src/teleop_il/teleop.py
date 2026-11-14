@@ -1,13 +1,15 @@
 """Teleop core (seam B): hand landmarks in, joint targets and flags out."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
 from teleop_il.ik import GRIPPER_CLOSED, GRIPPER_OPEN, ArmController
 
 _WRIST, _MIDDLE_MCP, _THUMB_TIP, _INDEX_TIP = 0, 9, 4, 8
+# Palm segments (landmark pairs) whose image length over camera-plane world length gives inverse distance to the camera.
+_PALM_SEGMENTS = ((0, 9), (5, 17), (0, 5), (0, 17))
 
 
 @dataclass(frozen=True)
@@ -16,6 +18,7 @@ class HandFrame:
     image_landmarks: np.ndarray | None         # (21, 3) MediaPipe image coordinates (x, y in 0..1, z relative); None = no hand
     world_landmarks: np.ndarray | None         # (21, 3) metres, origin at the hand centre; None = no hand
     engage: bool                               # clutch held
+    close_gripper: bool = False                # gripper key held or toggled on (the pinch can be hidden from the camera)
 
 
 @dataclass(frozen=True)
@@ -24,6 +27,7 @@ class TeleopOutput:
     engaged: bool
     tracking_lost: bool                        # hand missing for longer than the limit right now
     flagged: bool                              # hand was missing for longer than the limit at some point since reset
+    info: dict = field(default_factory=dict)   # diagnostics for the overlay and the session log
 
 
 @dataclass(frozen=True)
@@ -31,15 +35,18 @@ class TeleopConfig:
     gain_y: float = 0.8                        # metres per image width, hand towards user's right (u down) = arm -y
     gain_z: float = 0.8                        # metres per image height, hand up = arm +z
     gain_x: float = 0.5                        # metres per 100 percent growth of the hand in the image = arm +x
+    image_aspect: float = 4 / 3                # image width over height (640 x 480)
     low: tuple = (0.08, -0.17, 0.015)          # workspace box the target is clamped to
     high: tuple = (0.32, 0.17, 0.25)
     ik_iterations: int = 8
     pinch_close_below_m: float = 0.03          # thumb-index gap that closes the gripper
     pinch_open_above_m: float = 0.05           # gap that opens it again (hysteresis in between)
     lost_after_s: float = 0.3                  # hand missing longer than this flags the episode
-    min_cutoff_hz: float = 1.0                 # One-Euro filter on the hand position features
-    beta: float = 5.0
+    min_cutoff_hz: float = 1.0                 # One-Euro filter on the hand position (u, v)
+    beta: float = 20.0                         # raised from 5 after Khoi's G5 test: 90 percent of a quick move in 3 frames
     derivative_cutoff_hz: float = 1.0
+    size_min_cutoff_hz: float = 0.8            # separate, heavier filter on the depth cue, which is the noisiest
+    size_beta: float = 2.0
 
 
 class OneEuroFilter:
@@ -85,26 +92,36 @@ class Teleop:
         self._last_seen_t = None
         self._last_t = None
         self._missing = False
+        self._gap = float("nan")
         self._new_filter()
 
     def _new_filter(self) -> None:
         c = self._cfg
         self._filter = OneEuroFilter(c.min_cutoff_hz, c.beta, c.derivative_cutoff_hz)
+        self._size_filter = OneEuroFilter(c.size_min_cutoff_hz, c.size_beta, c.derivative_cutoff_hz)
 
-    @staticmethod
-    def _features(frame: HandFrame) -> np.ndarray:
-        img = frame.image_landmarks
-        size = float(np.linalg.norm(img[_MIDDLE_MCP, :2] - img[_WRIST, :2]))
-        return np.array([img[_WRIST, 0], img[_WRIST, 1], size])
+    def _features(self, frame: HandFrame) -> np.ndarray:
+        """(u, v, inverse distance). The depth cue is palm image length over palm length across the image plane, so
+        tilting the hand does not change it: the world landmarks say how much of each segment points at the camera."""
+        img, world = frame.image_landmarks, frame.world_landmarks
+        seen = perp = 0.0
+        for a, b in _PALM_SEGMENTS:
+            di = img[b, :2] - img[a, :2]
+            seen += float(np.hypot(di[0] * self._cfg.image_aspect, di[1]))
+            perp += float(np.hypot(*(world[b, :2] - world[a, :2])))
+        return np.array([img[_WRIST, 0], img[_WRIST, 1], seen / max(perp, 1e-6)])
+
+    def _smooth(self, feats: np.ndarray, dt: float) -> np.ndarray:
+        return np.array([*self._filter(feats[:2], dt), *self._size_filter(feats[2:], dt)])
 
     def _update_gripper(self, frame: HandFrame) -> None:
         world = frame.world_landmarks
-        gap = float(np.linalg.norm(world[_THUMB_TIP] - world[_INDEX_TIP]))
+        gap = self._gap = float(np.linalg.norm(world[_THUMB_TIP] - world[_INDEX_TIP]))
         if gap < self._cfg.pinch_close_below_m:
             self._gripper_closed = True
         elif gap > self._cfg.pinch_open_above_m:
             self._gripper_closed = False
-        self._q[5] = GRIPPER_CLOSED if self._gripper_closed else GRIPPER_OPEN
+        self._q[5] = GRIPPER_CLOSED if (self._gripper_closed or frame.close_gripper) else GRIPPER_OPEN
 
     def update(self, frame: HandFrame) -> TeleopOutput:
         c = self._cfg
@@ -121,7 +138,8 @@ class Teleop:
         self._last_t, self._last_seen_t = frame.t, frame.t
         if self._missing:                                       # hand is back: start fresh so the arm cannot jump
             self._new_filter()
-        feats = self._filter(self._features(frame), dt)
+        raw = self._features(frame)
+        feats = self._smooth(raw, dt)
         self._update_gripper(frame)
         if not frame.engage:
             self._engaged = False
@@ -135,4 +153,5 @@ class Teleop:
             gripper = self._q[5]
             self._q = self._arm.track(self._target, c.ik_iterations)
             self._q[5] = gripper
-        return TeleopOutput(self._q.copy(), self._engaged, False, self._flagged)
+        info = {"raw": raw, "filtered": feats, "target": self._target.copy(), "pinch_gap_m": self._gap}
+        return TeleopOutput(self._q.copy(), self._engaged, False, self._flagged, info)

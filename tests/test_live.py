@@ -95,3 +95,107 @@ def test_the_camera_is_released_after_a_normal_run():
     env = Env(); env.reset(0)
     run_session(cam, FakeTracker(), Teleop(), env, secs=1.0, clock=clock, engaged=lambda: True)
     assert cam.closed is True
+
+
+# ---- G5 feedback: the simulation window should look from behind the arm, like the user sits ----
+
+def test_the_simulation_view_puts_the_arms_minus_y_side_on_the_right_of_the_screen():
+    import mujoco
+    from teleop_il.live import user_view
+    env = Env(); env.reset(0)
+    cam = mujoco.MjvCamera()
+    user_view(cam)
+    scene = mujoco.MjvScene(env.model, maxgeom=100)
+    mujoco.mjv_updateScene(env.model, env.data, mujoco.MjvOption(), None, cam, mujoco.mjtCatBit.mjCAT_ALL, scene)
+    gl = scene.camera[0]
+    forward, up = np.array(gl.forward), np.array(gl.up)
+    right = np.cross(forward, up)
+    assert right @ np.array([0.0, -1.0, 0.0]) > 0.9           # user's right = arm -y = screen right
+    assert forward @ np.array([1.0, 0.0, 0.0]) > 0.7          # looking from behind the arm towards the cube area
+
+
+def test_a_session_log_records_one_row_per_frame_with_the_real_gripper_position():
+    from teleop_il.diagnose import SessionLog
+    clock = FakeClock()
+    env = Env(); env.reset(0)
+    log = SessionLog()
+    stats = run_session(FakeCamera(clock), FakeTracker(), Teleop(), env, secs=1.0, clock=clock,
+                        engaged=lambda: True, log=log)
+    assert len(log) == stats.frames
+    assert log.last_ee == pytest.approx([0.2, 0.0, 0.09], abs=0.01)
+
+
+def test_the_gripper_key_state_reaches_the_teleop_frame():
+    clock = FakeClock()
+    env = Env(); env.reset(0)
+    outputs = []
+    class Spy(Teleop):
+        def update(self, frame):
+            out = super().update(frame); outputs.append(out); return out
+    run_session(FakeCamera(clock), FakeTracker(), Spy(), env, secs=0.5, clock=clock, engaged=lambda: True,
+                close_gripper=lambda: True)
+    assert outputs[-1].joint_targets[5] == pytest.approx(-0.175)
+
+
+# ---- latency: when processing is slower than the camera, frames must not queue up and age ----
+
+class GatedCamera:
+    """Delivers frame n only after the test calls release(); frames are small arrays holding their own number."""
+    def __init__(self):
+        import threading
+        self._gate = threading.Semaphore(0)
+        self.n = 0
+        self.closed = False
+    def release(self, k=1):
+        for _ in range(k): self._gate.release()
+    def read(self):
+        if not self._gate.acquire(timeout=2.0):
+            return False, None
+        self.n += 1
+        return True, np.full((2, 2, 3), self.n, np.uint8)
+    def close(self): self.closed = True
+
+
+def wait_until(cond, timeout=2.0):
+    import time
+    end = time.time() + timeout
+    while time.time() < end and not cond():
+        time.sleep(0.002)
+    return cond()
+
+
+def test_the_reader_hands_over_the_newest_frame_and_skips_the_stale_ones():
+    from teleop_il.live import LatestFrameCamera
+    inner = GatedCamera()
+    cam = LatestFrameCamera(inner)
+    inner.release(5)                                       # five frames arrive while the consumer is busy
+    assert wait_until(lambda: inner.n == 5)
+    ok, frame = cam.read()
+    assert ok and frame[0, 0, 0] == 5                      # not frame 1
+    cam.close()
+
+
+def test_the_reader_waits_for_a_new_frame_instead_of_repeating_the_last_one():
+    import threading
+    from teleop_il.live import LatestFrameCamera
+    inner = GatedCamera()
+    cam = LatestFrameCamera(inner)
+    inner.release(1)
+    first = cam.read()[1][0, 0, 0]
+    seen = []
+    t = threading.Thread(target=lambda: seen.append(cam.read()[1][0, 0, 0]))
+    t.start()
+    t.join(timeout=0.2)
+    assert t.is_alive()                                    # no new frame yet, so read() is still waiting
+    inner.release(1)
+    t.join(timeout=2.0)
+    assert (first, seen) == (1, [2])
+    cam.close()
+
+
+def test_closing_the_reader_stops_its_thread_and_closes_the_camera():
+    from teleop_il.live import LatestFrameCamera
+    inner = GatedCamera()
+    cam = LatestFrameCamera(inner)
+    cam.close()
+    assert inner.closed is True and not cam.thread_alive
