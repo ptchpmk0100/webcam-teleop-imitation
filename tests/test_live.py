@@ -358,3 +358,33 @@ def test_the_demo_window_bypasses_the_desktop_input_method():
     environ = {"QT_IM_MODULE": "ibus", "XMODIFIERS": "@im=ibus", "HOME": "/x"}
     plain_letter_keys(environ)
     assert environ["QT_IM_MODULE"] == "none" and "XMODIFIERS" not in environ and environ["HOME"] == "/x"
+
+
+def test_restarting_an_attempt_opens_the_gripper_again():
+    from teleop_il.live import apply_key
+    state, attempts = key_state()
+    apply_key(ord("g"), state, attempts)
+    apply_key(ord("r"), state, attempts)
+    assert not state["key_closed"]
+
+
+def test_a_new_attempt_starts_with_the_gripper_open_and_the_last_result_is_reported():
+    from teleop_il.live import Attempts, start_of_attempt
+    state = {"key_closed": True, "printed": 0}
+    attempts = Attempts(seeds=(1, 2))
+    attempts.results.append({"seed": 1, "outcome": "lifted", "success": True, "seconds": 9.6, "assist_fired": 1})
+    lines = start_of_attempt(state, attempts)
+    assert not state["key_closed"]
+    assert lines == ["attempt 1: lifted in 9.6 s (assist fired 1x)"]
+    assert start_of_attempt(state, attempts) == []                       # each result reported once
+
+
+def test_the_session_log_records_which_key_the_window_received():
+    from teleop_il.diagnose import SessionLog
+    clock = FakeClock()
+    env = Env(); env.reset(0)
+    log = SessionLog()
+    keys = iter(["", "w", "", "s"] + [""] * 100)
+    run_session(FakeCamera(clock), FakeTracker(), Teleop(), env, secs=0.3, clock=clock, engaged=lambda: True,
+                log=log, last_key=lambda: next(keys))
+    assert [r["key"] for r in log._rows[:4]] == ["", "w", "", "s"]

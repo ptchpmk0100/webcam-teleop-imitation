@@ -105,7 +105,7 @@ class Attempts:
 
 
 def run_session(camera, tracker, teleop, env, *, secs: float, clock, engaged, viewer=None, preview=None,
-                status=None, close_gripper=lambda: False, forward=lambda: 0.0, attempts=None,
+                status=None, close_gripper=lambda: False, forward=lambda: 0.0, attempts=None, last_key=lambda: "",
                 log=None) -> SessionStats:
     """Run the live loop for `secs` seconds of `clock` time; the simulation advances in real time at 20 Hz.
 
@@ -145,7 +145,8 @@ def run_session(camera, tracker, teleop, env, *, secs: float, clock, engaged, vi
                 log.add(t=b - t0, detected=bool(result.hand_landmarks), engaged=out.engaged, info=out.info,
                         ee=env.ee_position(), gripper=float(out.joint_targets[5]), key_closed=key_closed,
                         image=frame.image_landmarks, world=frame.world_landmarks, cube=env.cube_position(),
-                        forward_m=frame.forward_m, attempt=attempts.number if attempts is not None else 0)
+                        forward_m=frame.forward_m, attempt=attempts.number if attempts is not None else 0,
+                        key=last_key())
             frames += 1
             detected += bool(result.hand_landmarks)
             for name, dur in zip(stages, (b - a, c - b, d - c, e - d)):
@@ -307,26 +308,37 @@ def apply_key(k: int, state: dict, attempts) -> bool:
         state["forward"] -= FORWARD_STEP_M
     elif ch == "r":
         attempts.restart()
+        state["key_closed"] = False
     elif ch == "n":
         attempts.skip()
     else:
         used = False
     state["last_key"] = name if used else f"{name} (unused)"
+    state["key_event"] = name                       # read once by the session log, so each press is logged once
     return True
+
+
+def start_of_attempt(state: dict, attempts) -> list[str]:
+    """Report results not reported yet; if there are any, a new attempt has begun, so open the gripper again (in try5
+    the closed gripper carried over from attempt 3 into attempt 4)."""
+    new = attempts.results[state.get("printed", 0):]
+    state["printed"] = len(attempts.results)
+    if new:
+        state["key_closed"] = False
+    return [f"attempt {attempts.results.index(r) + 1}: {r['outcome']} in {r['seconds']:.1f} s "
+            f"(assist fired {r['assist_fired']}x)" for r in new]
 
 
 def _window(cv2, display, state, attempts, env):
     """The demo window's per-frame callback: draw everything, handle the keys. Returns False to quit."""
-    seen_results = {"n": 0, "banner": "", "until": 0.0}
+    seen_results = {"banner": "", "until": 0.0}
 
     def preview(image, result, out, fps):
         now = time.perf_counter()
-        if len(attempts.results) > seen_results["n"]:
-            seen_results["n"] = len(attempts.results)
+        for line in start_of_attempt(state, attempts):
             last = attempts.results[-1]
             seen_results["banner"], seen_results["until"] = ("LIFTED!" if last["success"] else last["outcome"]), now + 1.5
-            print(f"attempt {len(attempts.results)}: {last['outcome']} in {last['seconds']:.1f} s "
-                  f"(assist fired {last['assist_fired']}x)", flush=True)
+            print(line, flush=True)
         info, ee = out.info, env.ee_position()
         assist = info.get("assist", "off")
         lifted = sum(r["success"] for r in attempts.results)
@@ -410,6 +422,7 @@ def main(argv=None) -> int:
         stats = run_session(camera, tracker, teleop, env, secs=args.secs, clock=time.perf_counter,
                             engaged=lambda: state["engaged"], preview=preview, status=status,
                             close_gripper=lambda: state["key_closed"], forward=lambda: state["forward"],
+                            last_key=lambda: state.pop("key_event", ""),
                             attempts=attempts, log=log)
     finally:
         tracker.close()
@@ -423,6 +436,8 @@ def main(argv=None) -> int:
           f"hand detected in {100 * stats.detected_frames / max(stats.frames, 1):.0f}% of frames")
     for name, (mean, p95) in stats.stage_ms.items():
         print(f"  {name:9s} mean {mean:6.2f} ms   p95 {p95:6.2f} ms")
+    for line in start_of_attempt(state, attempts):                 # the last result ends the loop before the window
+        print(line)                                                # could report it
     if attempts.results:
         k = sum(r["success"] for r in attempts.results)
         print(f"{'TRIAL' if args.trial else 'practice'}: lifted {k} of {len(attempts.results)} attempts"
