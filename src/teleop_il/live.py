@@ -276,6 +276,45 @@ PRACTICE_SEEDS = tuple(range(600, 620))    # practice uses other cubes, so the t
 FORWARD_STEP_M = 0.005                     # one W/S press; holding the key repeats it (about 15 cm/s)
 
 
+def plain_letter_keys(environ=os.environ) -> None:
+    """Make letter keys reach the OpenCV (Qt) window as plain keys. With an input method between keyboard and window
+    (here ibus with Unikey, Telex typing: W and S are composing keys), W, S and G never arrived in Khoi's try4 session
+    (0 presses in 6 attempts) while SPACE did. Must run before the first window opens."""
+    environ["QT_IM_MODULE"] = "none"
+    environ.pop("XMODIFIERS", None)
+
+
+_KEY_NAMES = {32: "SPACE", 27: "ESC"}
+
+
+def apply_key(k: int, state: dict, attempts) -> bool:
+    """One key from cv2.waitKey (already masked to 8 bits; -1 & 0xFF = 255 means none). Returns False to quit.
+    Letters work in either case; every key received is recorded in state["last_key"] so the screen can show it."""
+    if k == 255:
+        return True
+    ch = chr(k).lower() if 32 < k < 127 else ""
+    name = _KEY_NAMES.get(k, ch or str(k))
+    used = True
+    if ch == "q" or k == 27:
+        return False
+    if k == 32:
+        state["engaged"] = not state["engaged"]
+    elif ch == "g":
+        state["key_closed"] = not state["key_closed"]
+    elif ch == "w":
+        state["forward"] += FORWARD_STEP_M
+    elif ch == "s":
+        state["forward"] -= FORWARD_STEP_M
+    elif ch == "r":
+        attempts.restart()
+    elif ch == "n":
+        attempts.skip()
+    else:
+        used = False
+    state["last_key"] = name if used else f"{name} (unused)"
+    return True
+
+
 def _window(cv2, display, state, attempts, env):
     """The demo window's per-frame callback: draw everything, handle the keys. Returns False to quit."""
     seen_results = {"n": 0, "banner": "", "until": 0.0}
@@ -302,7 +341,7 @@ def _window(cv2, display, state, attempts, env):
             f"attempt {attempts.number}{'/' + str(len(attempts.seeds)) if attempts.counted else ' (practice)'}"
             f"   {max(attempts.limit_s - attempts.elapsed(now - state['t0']), 0):4.1f} s left",
             f"lifted {lifted} of {len(attempts.results)}",
-            "R restart  N skip  Q quit",
+            f"last key: {state.get('last_key') or 'none yet'}   R restart  N skip  Q quit",
         ]
         banner = seen_results["banner"] if now < seen_results["until"] else ""
         shown = display.compose(image, lines, assist=assist, banner=banner)
@@ -312,22 +351,7 @@ def _window(cv2, display, state, attempts, env):
             for p in result.hand_landmarks[0]:
                 cv2.circle(shown, (x0 + int((1 - p.x) * w), int(p.y * h)), 2, (0, 255, 0), -1)
         cv2.imshow("webcam teleop (Q quits)", shown)
-        k = cv2.waitKey(1) & 0xFF
-        if k in (ord("q"), 27):
-            return False
-        if k == ord(" "):
-            state["engaged"] = not state["engaged"]
-        elif k == ord("g"):
-            state["key_closed"] = not state["key_closed"]
-        elif k == ord("w"):
-            state["forward"] += FORWARD_STEP_M
-        elif k == ord("s"):
-            state["forward"] -= FORWARD_STEP_M
-        elif k == ord("r"):
-            attempts.restart()
-        elif k == ord("n"):
-            attempts.skip()
-        return True
+        return apply_key(cv2.waitKey(1) & 0xFF, state, attempts)
     return preview
 
 
@@ -362,9 +386,10 @@ def main(argv=None) -> int:
     teleop = Teleop() if args.no_assist else AssistedTeleop(Teleop(), ee=env.ee_position, cube=env.cube_position)
     tracker = HandTracker()
     camera = LatestFrameCamera(Camera(exposure=None if args.auto_exposure else args.exposure))
-    state = {"engaged": args.headless, "key_closed": False, "forward": 0.0, "t0": time.perf_counter()}
+    state = {"engaged": args.headless, "key_closed": False, "forward": 0.0, "t0": time.perf_counter(), "last_key": ""}
     preview = display = None
     if not args.headless:
+        plain_letter_keys()
         import cv2
 
         from teleop_il.display import Display

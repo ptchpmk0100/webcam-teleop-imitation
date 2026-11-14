@@ -312,3 +312,49 @@ def test_skipping_an_attempt_records_it_as_failed():
     run_session(FakeCamera(clock), FakeTracker(), Teleop(), env, secs=0.8, clock=clock, engaged=lambda: True,
                 attempts=attempts, preview=preview)
     assert [(r["seed"], r["outcome"], r["success"]) for r in attempts.results] == [(3, "skipped", False)]
+
+
+# ---- keys: Khoi's try4 log had 0 W/S/G presses in 6 attempts while SPACE worked. Cause found on his desktop: an
+# ---- input method (ibus Unikey, Telex) sits between the keyboard and Qt windows, and Telex uses letters for composing.
+
+def key_state():
+    from teleop_il.live import Attempts
+    return {"engaged": False, "key_closed": False, "forward": 0.0, "last_key": ""}, Attempts(seeds=(1, 2))
+
+
+@pytest.mark.parametrize("letter", ["g", "G"])
+def test_the_gripper_key_works_in_lower_and_upper_case(letter):
+    from teleop_il.live import apply_key
+    state, attempts = key_state()
+    apply_key(ord(letter), state, attempts)
+    assert state["key_closed"]
+
+
+def test_w_and_s_build_up_the_forward_offset_half_a_centimetre_per_press():
+    from teleop_il.live import apply_key
+    state, attempts = key_state()
+    for k in "wwwW":
+        apply_key(ord(k), state, attempts)
+    apply_key(ord("s"), state, attempts)
+    assert state["forward"] == pytest.approx(0.015)
+
+
+def test_every_key_the_window_receives_is_shown_even_unknown_ones():
+    from teleop_il.live import apply_key
+    state, attempts = key_state()
+    apply_key(ord("x"), state, attempts)
+    assert state["last_key"] == "x (unused)"
+
+
+def test_q_and_escape_quit():
+    from teleop_il.live import apply_key
+    state, attempts = key_state()
+    assert apply_key(ord("q"), state, attempts) is False and apply_key(27, state, attempts) is False
+    assert apply_key(ord(" "), state, attempts) is True and state["engaged"]
+
+
+def test_the_demo_window_bypasses_the_desktop_input_method():
+    from teleop_il.live import plain_letter_keys
+    environ = {"QT_IM_MODULE": "ibus", "XMODIFIERS": "@im=ibus", "HOME": "/x"}
+    plain_letter_keys(environ)
+    assert environ["QT_IM_MODULE"] == "none" and "XMODIFIERS" not in environ and environ["HOME"] == "/x"
