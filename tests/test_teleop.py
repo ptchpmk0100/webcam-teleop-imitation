@@ -1,0 +1,181 @@
+"""Seam B: teleop core, driven by synthetic landmark clips. Expected motion comes from the documented gains."""
+import numpy as np
+import pytest
+
+from helpers import Clock, fk, hand
+from teleop_il.ik import ArmController
+from teleop_il.teleop import Teleop
+
+# Documented mapping (metres of end-effector motion per unit of hand motion):
+#   hand left-right in the image: 0.8 m per image width, towards the user's right = arm -y  (u decreases -> y decreases)
+#   hand up-down in the image:    0.8 m per image height, up = arm +z
+#   hand size (distance to camera): 0.5 m per 100 percent size change, bigger = arm +x
+
+
+def settle(tp, clock, n=40, **kw):
+    out = None
+    for _ in range(n):
+        out = tp.update(hand(clock.t(), **kw))
+    return out
+
+
+def engaged_teleop():
+    tp, clock = Teleop(), Clock()
+    base = settle(tp, clock, n=3, engage=False)           # arm sits at home before engaging
+    start, _ = fk(base.joint_targets)
+    settle(tp, clock, n=3)                                 # engage with the hand at the reference position
+    return tp, clock, start
+
+
+def test_arm_does_not_move_before_the_clutch_is_engaged():
+    tp, clock = Teleop(), Clock()
+    first = settle(tp, clock, n=1, engage=False, u=0.5)
+    later = settle(tp, clock, n=10, engage=False, u=0.2, v=0.8)
+    assert np.allclose(first.joint_targets, later.joint_targets)
+
+
+def test_hand_moving_right_by_a_tenth_of_the_image_moves_the_arm_8_cm_to_its_right():
+    tp, clock, start = engaged_teleop()
+    out = settle(tp, clock, u=0.4)                         # u decreases = user's right
+    pos, _ = fk(out.joint_targets)
+    assert pos - start == pytest.approx([0.0, -0.08, 0.0], abs=0.005)
+
+
+def test_hand_moving_up_by_a_tenth_of_the_image_lifts_the_arm_8_cm():
+    tp, clock, start = engaged_teleop()
+    out = settle(tp, clock, v=0.4)                         # v decreases = up in the image
+    pos, _ = fk(out.joint_targets)
+    assert pos - start == pytest.approx([0.0, 0.0, 0.08], abs=0.005)
+
+
+def test_hand_20_percent_bigger_in_the_image_moves_the_arm_10_cm_forward():
+    tp, clock, start = engaged_teleop()
+    out = settle(tp, clock, size=0.12)                     # closer to the camera
+    pos, _ = fk(out.joint_targets)
+    assert pos - start == pytest.approx([0.10, 0.0, 0.0], abs=0.005)
+
+
+def test_releasing_the_clutch_freezes_the_arm_and_reengaging_does_not_jump():
+    tp, clock, start = engaged_teleop()
+    moved = settle(tp, clock, u=0.4)
+    frozen = settle(tp, clock, n=20, engage=False, u=0.7, v=0.2)      # hand wanders, clutch released
+    assert np.allclose(frozen.joint_targets, moved.joint_targets, atol=1e-6)
+    again = settle(tp, clock, n=1, u=0.7, v=0.2)                      # clutch pressed at a new hand position
+    assert np.allclose(fk(again.joint_targets)[0], fk(moved.joint_targets)[0], atol=0.002)
+
+
+@pytest.mark.parametrize("x", [0.10, 0.15, 0.20, 0.25, 0.30])
+@pytest.mark.parametrize("y", [-0.15, -0.075, 0.0, 0.075, 0.15])
+def test_the_arm_reaches_the_whole_spawn_rectangle_at_table_height_pointing_down(x, y):
+    arm = ArmController()
+    q = arm.track([x, y, 0.03], iterations=600)
+    pos, tilt = fk(q)
+    assert np.linalg.norm(pos - [x, y, 0.03]) < 0.003
+    assert tilt <= 12.0                                   # measured worst case 10.7 degrees at the far corners
+
+
+# ---- pinch to gripper: closes below 3 cm, opens above 5 cm, stays put in between ----
+
+OPEN, CLOSED = 1.2, -0.175                                 # gripper joint values (jaw gap about 10 cm / touching)
+
+
+def gripper_after(tp, clock, pinch_m):
+    return tp.update(hand(clock.t(), pinch_m=pinch_m)).joint_targets[5]
+
+
+def test_pinch_closes_below_3_cm_and_opens_above_5_cm():
+    tp, clock = Teleop(), Clock()
+    assert gripper_after(tp, clock, 0.08) == pytest.approx(OPEN)
+    assert gripper_after(tp, clock, 0.04) == pytest.approx(OPEN)      # between the thresholds: still open
+    assert gripper_after(tp, clock, 0.025) == pytest.approx(CLOSED)
+    assert gripper_after(tp, clock, 0.04) == pytest.approx(CLOSED)    # between the thresholds: still closed
+    assert gripper_after(tp, clock, 0.06) == pytest.approx(OPEN)
+
+
+def test_pinch_does_not_flicker_around_the_closing_threshold():
+    tp, clock = Teleop(), Clock()
+    gripper_after(tp, clock, 0.08)
+    seen = [gripper_after(tp, clock, p) for p in (0.029, 0.031, 0.029, 0.031, 0.029, 0.031)]
+    assert seen == [pytest.approx(CLOSED)] * 6
+
+
+# ---- tracking loss: hold the arm; flag the episode when the hand is gone for more than 0.3 s ----
+
+def drop_hand(tp, clock, frames, engage=True):
+    from helpers import no_hand
+    out = None
+    for _ in range(frames):
+        out = tp.update(no_hand(clock.t(), engage=engage))
+    return out
+
+
+def test_a_short_dropout_holds_the_arm_and_does_not_flag_the_episode():
+    tp, clock, _ = engaged_teleop()
+    before = settle(tp, clock, u=0.4)
+    out = drop_hand(tp, clock, frames=8)                   # 0.27 s
+    assert np.array_equal(out.joint_targets, before.joint_targets)
+    assert out.tracking_lost is False and out.flagged is False
+
+
+def test_a_dropout_longer_than_0_3_s_flags_the_episode_and_keeps_holding():
+    tp, clock, _ = engaged_teleop()
+    before = settle(tp, clock, u=0.4)
+    out = drop_hand(tp, clock, frames=11)                  # 0.37 s
+    assert out.tracking_lost is True and out.flagged is True
+    assert np.array_equal(out.joint_targets, before.joint_targets)
+
+
+def test_when_the_hand_returns_the_arm_does_not_jump_and_the_flag_stays_until_reset():
+    tp, clock, _ = engaged_teleop()
+    before = settle(tp, clock, u=0.4)
+    drop_hand(tp, clock, frames=11)
+    back = tp.update(hand(clock.t(), u=0.8, v=0.2))        # hand reappears somewhere else
+    assert np.allclose(fk(back.joint_targets)[0], fk(before.joint_targets)[0], atol=0.002)
+    assert back.tracking_lost is False and back.flagged is True
+    tp.reset()
+    assert settle(tp, clock, n=1, engage=False).flagged is False
+
+
+def test_a_dropout_while_the_clutch_is_released_is_not_a_problem():
+    tp, clock, _ = engaged_teleop()
+    settle(tp, clock, n=3, engage=False)
+    out = drop_hand(tp, clock, frames=20, engage=False)
+    assert out.flagged is False and out.tracking_lost is False
+
+
+# ---- smoothing: depth and pixel noise must not shake the arm ----
+
+def test_hand_jitter_is_smoothed_to_less_than_half():
+    rng = np.random.default_rng(0)
+    tp, clock, _ = engaged_teleop()
+    ys, zs = [], []
+    for i in range(120):
+        out = tp.update(hand(clock.t(), u=0.5 + rng.normal(0, 0.004), v=0.5 + rng.normal(0, 0.004)))
+        if i >= 60:
+            pos, _ = fk(out.joint_targets)
+            ys.append(pos[1]); zs.append(pos[2])
+    raw_sigma = 0.8 * 0.004                                # unfiltered arm jitter would be 3.2 mm
+    assert np.std(ys) < 0.5 * raw_sigma and np.std(zs) < 0.5 * raw_sigma
+
+
+def test_a_steady_hand_motion_is_followed_with_little_lag():
+    tp, clock, start = engaged_teleop()
+    for i in range(1, 31):                                 # u from 0.5 to 0.4 over one second
+        out = tp.update(hand(clock.t(), u=0.5 - 0.1 * i / 30))
+    pos, _ = fk(out.joint_targets)
+    assert abs((pos - start)[1] - (-0.08)) < 0.02          # within 2 cm of where the hand now is
+
+
+def test_the_flag_survives_releasing_the_clutch_after_a_long_dropout():
+    tp, clock, _ = engaged_teleop()
+    drop_hand(tp, clock, frames=11)                        # flagged while the clutch is held
+    out = drop_hand(tp, clock, frames=5, engage=False)     # clutch released while the hand is still missing
+    assert out.flagged is True
+
+
+def test_a_hand_far_outside_the_range_keeps_the_arm_inside_the_workspace_box():
+    tp, clock, _ = engaged_teleop()
+    out = settle(tp, clock, n=60, u=0.1, v=0.0)            # 0.4 of the image left and up: asks for y = -0.32 m, z = +0.4 m
+    pos, _ = fk(out.joint_targets)
+    assert -0.18 <= pos[1] <= 0.18                         # box is y in [-0.17, 0.17]
+    assert pos[2] <= 0.26                                  # box is z up to 0.25

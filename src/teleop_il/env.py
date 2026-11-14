@@ -18,7 +18,7 @@ LIFT_THRESHOLD = 0.05                 # cube bottom more than 5 cm above the tab
 LIFT_HOLD_SECONDS = 1.0               # for at least 1 s, continuously
 SPAWN_X = (0.10, 0.30)                # metres forward of the arm base (starting rectangle, see PRD)
 SPAWN_Y = (-0.15, 0.15)               # metres sideways
-HOME_ARM = (0.0, -0.6293, 0.159, 1.6581, 1.6578)   # IK-derived pose, gripper about 14 cm above the table
+HOME_ARM = (0.0734, -0.2715, 0.1862, 1.6561, 1.673)   # IK-derived: gripper at (0.20, 0, 0.09), pointing straight down
 HOME_GRIPPER = 0.7277
 ASSET_DIR = Path(__file__).resolve().parents[2] / "assets" / "mujoco_menagerie" / "robotstudio_so101"
 
@@ -26,9 +26,11 @@ ASSET_DIR = Path(__file__).resolve().parents[2] / "assets" / "mujoco_menagerie" 
 ARM_JOINTS = ("shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper")
 
 
-def _build_model() -> mujoco.MjModel:
+def build_model(with_cube: bool = True) -> mujoco.MjModel:
     spec = mujoco.MjSpec.from_file(str(ASSET_DIR / "so101.xml"))
     spec.worldbody.add_geom(name="floor", type=mujoco.mjtGeom.mjGEOM_PLANE, size=[0, 0, 0.05])
+    if not with_cube:
+        return spec.compile()
     cube = spec.worldbody.add_body(name="cube", pos=[0.2, 0.0, CUBE_HALF])
     cube.add_freejoint()
     cube.add_geom(name="cube", type=mujoco.mjtGeom.mjGEOM_BOX, size=[CUBE_HALF] * 3,
@@ -39,7 +41,7 @@ def _build_model() -> mujoco.MjModel:
 
 class Env:
     def __init__(self) -> None:
-        self.model = _build_model()
+        self.model = build_model()
         self.data = mujoco.MjData(self.model)
         self._substeps = round(CONTROL_DT / self.model.opt.timestep)
         assert abs(self._substeps * self.model.opt.timestep - CONTROL_DT) < 1e-9

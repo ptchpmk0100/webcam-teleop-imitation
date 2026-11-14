@@ -49,10 +49,10 @@ def test_one_step_advances_time_by_one_twentieth_of_a_second(env):
 # ---- success check: cube bottom more than 5 cm above the table, continuously for 1 s (20 steps at 20 Hz) ----
 
 def hold_cube_up(env, obs, clearance, steps):
-    """Keep the cube `clearance` metres above the table for `steps` control steps (kinematic hold)."""
+    """Keep the cube `clearance` metres above the table for `steps` control steps (kinematic hold).
+    The cube is held in a table corner, clear of the arm's hover pose."""
     for _ in range(steps):
-        x, y = obs["cube_pose"][:2]
-        env.place_cube([x, y, 0.02 + clearance])
+        env.place_cube([0.12, 0.14, 0.02 + clearance])
         obs = env.step(obs["joint_pos"])
     return obs
 
