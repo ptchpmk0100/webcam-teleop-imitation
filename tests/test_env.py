@@ -29,7 +29,7 @@ def test_different_seeds_give_different_cube_positions(env):
 def test_cube_spawns_inside_the_agreed_rectangle(env):
     for seed in range(50):
         x, y = cube_xy(env.reset(seed=seed))
-        assert 0.10 <= x <= 0.30 and -0.15 <= y <= 0.15
+        assert 0.17 <= x <= 0.30 and -0.15 <= y <= 0.15
 
 
 def test_cube_rests_on_the_table_after_reset(env):

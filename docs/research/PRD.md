@@ -58,7 +58,7 @@ Four deep modules. Khoi owns each interface; the inside is filled in by agents.
 
 Technical decisions carried from the grill and spike:
 - Arm: SO-101 from mujoco_menagerie, 5 arm joints plus gripper, position actuators. Verified by loading the model in the spike.
-- Reachable spawn area: the spike found a rectangle (forward 0.10 to 0.30 m, sideways -0.15 to +0.15 m, from the arm base) reachable with the gripper within 10 degrees of vertical at cube-centre height, ignoring collisions and grasp physics. The scripted expert must prove the final spawn rectangle with a real grasp before demos are recorded. The default cube position in menagerie's box scene is out of reach and must not be used.
+- Reachable spawn area (UPDATED by ticket 06: forward 0.17 to 0.30 m is the proven rectangle; the text below is the spike's original claim): the spike found a rectangle (forward 0.10 to 0.30 m, sideways -0.15 to +0.15 m, from the arm base) reachable with the gripper within 10 degrees of vertical at cube-centre height, ignoring collisions and grasp physics. The scripted expert must prove the final spawn rectangle with a real grasp before demos are recorded. The default cube position in menagerie's box scene is out of reach and must not be used.
 - Camera: lamp-lit hand, manual exposure, 640 by 480 MJPG, 30 FPS requested. Auto exposure delivers 17 FPS in this room and is not acceptable for recording. Scripts set exposure mode explicitly because V4L2 settings persist on the device.
 - Rates: policy and recording at 20 Hz; teleop loop at camera rate, decimated to 20 Hz for recording.
 - Action space: absolute joint targets with a chunk of about 10 future steps.

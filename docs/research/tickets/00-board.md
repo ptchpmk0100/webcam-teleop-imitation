@@ -22,7 +22,7 @@ Critical path to the week-1 video: 01, 03, 04, 05. In parallel after 01: 02, 03,
 - ONNX parity (09, 15): max absolute difference at most 1e-4 against PyTorch on recorded observations.
 - C++ parity (13, 14): same success outcome on at least 98 of 100 seeds as Python; physics-only parity: cube height within 5 mm after the scripted sequence.
 - Tiny overfit check (09, 15): training loss falls below 10 percent of its starting value on a 5-episode set.
-- Spawn rectangle: starts at forward 0.10 to 0.30 m, sideways -0.15 to +0.15 m, tightened by 06 to what the expert proves.
+- Spawn rectangle: forward 0.17 to 0.30 m, sideways -0.15 to +0.15 m. Started at 0.10 to 0.30; ticket 06 tightened the near edge to what the expert proves (all 17 failures of the first run were closer than 0.165 m).
 - Camera (04): 25 FPS or better in the recording mode, measured and printed.
 
 ## Run budget
