@@ -10,4 +10,5 @@ Status: early build. Design and decisions: [docs/research/DECISIONS.md](docs/res
 - `make trial` runs the counted trial: 10 attempts on fixed cubes, results saved under `runs/`. Bar: 5 of 10 lifted.
 - Record a session with `make demo ARGS="--log runs/try4.npz"` and read it with `make diagnose LOG=runs/try4.npz`. `--no-assist` switches the assist off, `--auto-exposure` uses the camera's own exposure (slower frame rate in dim light).
 - `make parity` builds the C++ rollout (CMake, against the MuJoCo library inside the pinned Python wheel) and checks it against the Python physics on 130 sequences; exit 0 only if they agree (they are bit-identical).
+- `uv run python -m teleop_il.train_state --expert-episodes 100` records scripted-expert episodes into a new folder, trains the state policy (MLP, 10-step action chunks) on CPU, exports PyTorch and ONNX files and scores the ONNX policy on the 100 held-out seeds (`--data FOLDER` trains on an existing dataset).
 - `python -m teleop_il.evaluation` (through `uv run`) runs the harness null checks: a do-nothing and a random policy must score about 0 percent.
