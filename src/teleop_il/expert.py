@@ -20,6 +20,16 @@ JAW_OFFSET = 0.010                  # metres from the cube centre against the fi
 APPROACH_STEPS, DESCEND_STEPS, CLOSE_STEPS, LIFT_STEPS = 40, 45, 15, 30     # 20 Hz control steps per phase
 
 
+def grasp_point(cube_xyz, z: float = GRASP_Z) -> np.ndarray:
+    """Where the gripper frame goes to grasp a cube at `cube_xyz`: offset against the fixed jaw along the closing axis,
+    which the pan joint turns with the arm (+y at home)."""
+    cx, cy = float(cube_xyz[0]), float(cube_xyz[1])
+    yaw = math.atan2(cy, cx)
+    closing_axis = np.array([-math.sin(yaw), math.cos(yaw), 0.0])
+    offset = -JAW_OFFSET * closing_axis
+    return np.array([cx + offset[0], cy + offset[1], z])
+
+
 class ExpertPolicy:
     """Reads only the observation (joint positions and cube pose), never the simulator's internals."""
 
@@ -33,11 +43,7 @@ class ExpertPolicy:
         self._cube = None
 
     def _hand_target(self, z: float) -> np.ndarray:
-        cx, cy = self._cube[:2]
-        yaw = math.atan2(cy, cx)                      # the pan joint turns the closing axis (+y at home) with it
-        closing_axis = np.array([-math.sin(yaw), math.cos(yaw), 0.0])
-        offset = -JAW_OFFSET * closing_axis
-        return np.array([cx + offset[0], cy + offset[1], z])
+        return grasp_point(self._cube, z)
 
     def __call__(self, obs):
         if self._cube is None:

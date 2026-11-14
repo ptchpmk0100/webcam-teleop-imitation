@@ -19,6 +19,7 @@ class HandFrame:
     world_landmarks: np.ndarray | None         # (21, 3) metres, origin at the hand centre; None = no hand
     engage: bool                               # clutch held
     close_gripper: bool = False                # gripper key held or toggled on (the pinch can be hidden from the camera)
+    forward_m: float = 0.0                     # forward offset the W/S keys have built up so far (metres, any origin)
 
 
 @dataclass(frozen=True)
@@ -32,7 +33,12 @@ class TeleopOutput:
 
 @dataclass(frozen=True)
 class TeleopConfig:
-    gain_y: float = 0.6                        # metres per image width, hand towards user's right (u down) = arm -y
+    # Redesign (Q14 fallback, after the prototypes): forward-back comes from the W/S keys, not from the hand's size in
+    # the image (it followed palm tilt), and only the gripper key closes the gripper (the pinch flickered and hid the
+    # hand). "hand" and True bring back the first mapping.
+    forward_from: str = "keys"                 # "keys" (HandFrame.forward_m) or "hand" (hand size in the image)
+    pinch_closes_gripper: bool = False
+    gain_y: float = 0.6                       # metres per image width, hand towards user's right (u down) = arm -y
     gain_z: float = 0.5                        # metres per image height, hand up = arm +z
     gain_x: float = 0.3                        # metres per 100 percent growth of the hand in the image = arm +x
     image_aspect: float = 4 / 3                # image width over height (640 x 480)
@@ -88,6 +94,7 @@ class Teleop:
         self._q[5] = GRIPPER_OPEN
         self._engaged = False
         self._ref = None
+        self._ref_forward = 0.0
         self._ee0 = None
         self._flagged = False
         self._last_seen_t = None
@@ -123,15 +130,26 @@ class Teleop:
 
     def _update_gripper(self, frame: HandFrame) -> None:
         world = frame.world_landmarks
-        gap = self._gap = float(np.linalg.norm(world[_THUMB_TIP] - world[_INDEX_TIP]))
-        if gap < self._cfg.pinch_close_below_m:
-            self._gripper_closed = True
-        elif gap > self._cfg.pinch_open_above_m:
-            self._gripper_closed = False
+        if self._cfg.pinch_closes_gripper and world is not None:
+            gap = self._gap = float(np.linalg.norm(world[_THUMB_TIP] - world[_INDEX_TIP]))
+            if gap < self._cfg.pinch_close_below_m:
+                self._gripper_closed = True
+            elif gap > self._cfg.pinch_open_above_m:
+                self._gripper_closed = False
         self._q[5] = GRIPPER_CLOSED if (self._gripper_closed or frame.close_gripper) else GRIPPER_OPEN
+
+    def resume_from(self, joints) -> None:
+        """Take the arm over from another controller (the grasp assist) at `joints`; the next engaged hand frame becomes
+        the new reference, so the arm continues from there instead of jumping back to where the hand points."""
+        self._arm.reset(joints)
+        self._q = np.asarray(joints, dtype=float).copy()
+        self._target = self._arm.position()
+        self._engaged = False
+        self._new_filter()                                      # the hand moved meanwhile: a stale filter would drift
 
     def update(self, frame: HandFrame) -> TeleopOutput:
         c = self._cfg
+        self._update_gripper(frame)                             # the gripper key works even with the hand out of view
         if frame.image_landmarks is None:                       # no hand in this frame: hold everything
             self._missing = True
             if not frame.engage:
@@ -147,15 +165,19 @@ class Teleop:
             self._new_filter()
         raw = self._features(frame)
         feats = self._smooth(raw, dt)
-        self._update_gripper(frame)
         if not frame.engage:
             self._engaged = False
         elif not self._engaged or self._missing:
             self._ref, self._ee0, self._engaged = feats, self._target.copy(), True
+            self._ref_forward = frame.forward_m
         self._missing = False
         if self._engaged:
-            du, dv, ds = feats[0] - self._ref[0], feats[1] - self._ref[1], (feats[2] - self._ref[2]) / self._ref[2]
-            wanted = self._ee0 + np.array([c.gain_x * ds, c.gain_y * du, -c.gain_z * dv])
+            du, dv = feats[0] - self._ref[0], feats[1] - self._ref[1]
+            if c.forward_from == "hand":
+                dx = c.gain_x * (feats[2] - self._ref[2]) / self._ref[2]
+            else:
+                dx = frame.forward_m - self._ref_forward
+            wanted = self._ee0 + np.array([dx, c.gain_y * du, -c.gain_z * dv])
             self._target = np.clip(wanted, c.low, c.high)
             self._ee0 = self._ee0 + (self._target - wanted)     # no wind-up: the hand can come back from beyond the edge at once
             gripper = self._q[5]

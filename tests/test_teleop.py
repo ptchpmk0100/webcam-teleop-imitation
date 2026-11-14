@@ -4,7 +4,11 @@ import pytest
 
 from helpers import PALM, Clock, fk, hand, pinhole_hand
 from teleop_il.ik import ArmController
-from teleop_il.teleop import Teleop
+from teleop_il.teleop import HandFrame, Teleop, TeleopConfig
+
+# The first mapping (ticket 04): hand size moves the arm forward, a pinch closes the gripper. Kept as an option; the
+# default since the redesign (Q14 fallback) is forward-back on keys and the gripper on a key only.
+HAND_DEPTH = TeleopConfig(forward_from="hand", pinch_closes_gripper=True)
 
 # Documented mapping (metres of end-effector motion per unit of hand motion):
 #   hand left-right in the image: 0.6 m per image width, towards the user's right = arm -y  (u decreases -> y decreases)
@@ -21,7 +25,7 @@ def settle(tp, clock, n=40, **kw):
 
 
 def engaged_teleop():
-    tp, clock = Teleop(), Clock()
+    tp, clock = Teleop(HAND_DEPTH), Clock()
     base = settle(tp, clock, n=3, engage=False)           # arm sits at home before engaging
     start, _ = fk(base.joint_targets)
     settle(tp, clock, n=3)                                 # engage with the hand at the reference position
@@ -29,7 +33,7 @@ def engaged_teleop():
 
 
 def test_arm_does_not_move_before_the_clutch_is_engaged():
-    tp, clock = Teleop(), Clock()
+    tp, clock = Teleop(HAND_DEPTH), Clock()
     first = settle(tp, clock, n=1, engage=False, u=0.5)
     later = settle(tp, clock, n=10, engage=False, u=0.2, v=0.8)
     assert np.allclose(first.joint_targets, later.joint_targets)
@@ -85,7 +89,7 @@ def gripper_after(tp, clock, pinch_m):
 
 
 def test_pinch_closes_below_3_cm_and_opens_above_5_cm():
-    tp, clock = Teleop(), Clock()
+    tp, clock = Teleop(HAND_DEPTH), Clock()
     assert gripper_after(tp, clock, 0.08) == pytest.approx(OPEN)
     assert gripper_after(tp, clock, 0.04) == pytest.approx(OPEN)      # between the thresholds: still open
     assert gripper_after(tp, clock, 0.025) == pytest.approx(CLOSED)
@@ -94,7 +98,7 @@ def test_pinch_closes_below_3_cm_and_opens_above_5_cm():
 
 
 def test_pinch_does_not_flicker_around_the_closing_threshold():
-    tp, clock = Teleop(), Clock()
+    tp, clock = Teleop(HAND_DEPTH), Clock()
     gripper_after(tp, clock, 0.08)
     seen = [gripper_after(tp, clock, p) for p in (0.029, 0.031, 0.029, 0.031, 0.029, 0.031)]
     assert seen == [pytest.approx(CLOSED)] * 6
@@ -193,7 +197,7 @@ def test_a_quick_hand_move_is_followed_within_100_ms():
 
 
 def pinhole_engaged(**kw):
-    tp, clock = Teleop(), Clock()
+    tp, clock = Teleop(HAND_DEPTH), Clock()
     for _ in range(3):                                     # clutch released, hand already at its place
         tp.update(pinhole_hand(clock.t(), engage=False, **kw))
     out = None
@@ -228,20 +232,20 @@ def test_a_moderate_tilt_moves_the_arm_only_about_as_far_as_the_palm_really_move
 # ---- gripper key: the pinch can be hidden from the camera, so a key closes the gripper too ----
 
 def test_the_gripper_key_closes_the_gripper_even_when_the_pinch_is_open():
-    tp, clock = Teleop(), Clock()
+    tp, clock = Teleop(HAND_DEPTH), Clock()
     out = tp.update(hand(clock.t(), pinch_m=0.08, close_gripper=True))
     assert out.joint_targets[5] == pytest.approx(CLOSED)
 
 
 def test_releasing_the_gripper_key_opens_it_again_when_the_pinch_is_open():
-    tp, clock = Teleop(), Clock()
+    tp, clock = Teleop(HAND_DEPTH), Clock()
     tp.update(hand(clock.t(), pinch_m=0.08, close_gripper=True))
     out = tp.update(hand(clock.t(), pinch_m=0.08, close_gripper=False))
     assert out.joint_targets[5] == pytest.approx(OPEN)
 
 
 def test_a_pinch_still_closes_the_gripper_without_the_key():
-    tp, clock = Teleop(), Clock()
+    tp, clock = Teleop(HAND_DEPTH), Clock()
     out = tp.update(hand(clock.t(), pinch_m=0.02, close_gripper=False))
     assert out.joint_targets[5] == pytest.approx(CLOSED)
 
@@ -286,3 +290,85 @@ def test_the_arm_is_never_asked_to_go_closer_to_its_base_than_the_expert_can_gra
     out = settle(tp, clock, n=60, size=0.03)               # hand much further from the camera: asks for a far-back x
     pos, _ = fk(out.joint_targets)
     assert pos[0] >= 0.149                                 # expert-proven spawn starts at 0.17; teleop box starts at 0.15
+
+
+# ---- default mapping since the redesign (Q14 fallback): hand = left-right and up-down, W/S keys = forward-back,
+# ---- the gripper on a key only. A frame carries the forward offset the keys have built up so far (metres).
+
+def keys_frame(t, forward_m=0.0, **kw):
+    f = hand(t, **kw)
+    return HandFrame(f.t, f.image_landmarks, f.world_landmarks, f.engage, f.close_gripper, forward_m=forward_m)
+
+
+def keys_settle(tp, clock, n=40, **kw):
+    out = None
+    for _ in range(n):
+        out = tp.update(keys_frame(clock.t(), **kw))
+    return out
+
+
+def keys_teleop():
+    tp, clock = Teleop(), Clock()
+    keys_settle(tp, clock, n=3)
+    start, _ = fk(keys_settle(tp, clock, n=3).joint_targets)
+    return tp, clock, start
+
+
+def test_by_default_the_hand_coming_closer_to_the_camera_does_not_move_the_arm_forward():
+    tp, clock, start = keys_teleop()
+    pos, _ = fk(keys_settle(tp, clock, size=0.15).joint_targets)     # hand 50 percent bigger in the image
+    assert pos[0] == pytest.approx(start[0], abs=0.005)
+
+
+def test_the_forward_keys_move_the_arm_forward_by_the_offset_they_built_up():
+    tp, clock, start = keys_teleop()
+    pos, _ = fk(keys_settle(tp, clock, forward_m=0.03).joint_targets)
+    assert pos[0] - start[0] == pytest.approx(0.03, abs=0.005)
+
+
+def test_the_hand_still_moves_the_arm_left_right_and_up_down_in_the_default_mapping():
+    tp, clock, start = keys_teleop()
+    pos, _ = fk(keys_settle(tp, clock, u=0.6, v=0.45).joint_targets)
+    assert pos[1] - start[1] == pytest.approx(0.06, abs=0.005)
+    assert pos[2] - start[2] == pytest.approx(0.025, abs=0.005)
+
+
+def test_by_default_a_pinch_does_not_close_the_gripper():
+    tp, clock, _ = keys_teleop()
+    out = keys_settle(tp, clock, n=10, pinch_m=0.01)
+    assert out.joint_targets[5] > 1.0
+
+
+def test_the_gripper_key_closes_the_gripper_even_while_the_hand_is_out_of_view():
+    tp, clock, _ = keys_teleop()
+    out = tp.update(HandFrame(clock.t(), None, None, True, True))
+    assert out.joint_targets[5] == pytest.approx(-0.175)
+
+
+def test_forward_keys_held_past_the_workspace_edge_come_back_at_once():
+    tp, clock, start = keys_teleop()
+    keys_settle(tp, clock, forward_m=0.40)                            # far past the 0.32 m front edge
+    pos, _ = fk(keys_settle(tp, clock, forward_m=0.37).joint_targets)  # three presses back
+    assert pos[0] == pytest.approx(0.32 - 0.03, abs=0.007)
+
+
+def test_re_engaging_the_clutch_after_pressing_forward_keys_does_not_jump():
+    tp, clock, start = keys_teleop()
+    moved, _ = fk(keys_settle(tp, clock, forward_m=0.04).joint_targets)
+    keys_settle(tp, clock, n=5, forward_m=0.04, engage=False)
+    pos, _ = fk(keys_settle(tp, clock, n=5, forward_m=0.04).joint_targets)
+    assert pos == pytest.approx(moved, abs=0.003)
+
+
+def test_resuming_from_joint_values_makes_the_arm_continue_from_there_without_a_jump():
+    """After the grasp assist hands back, the hand must take over from where the assist left the arm."""
+    from teleop_il.ik import ArmController
+    tp, clock, _ = keys_teleop()
+    arm = ArmController()
+    q = arm.track([0.25, 0.05, 0.03], 60)
+    tp.resume_from(q)
+    out = keys_settle(tp, clock, n=3, u=0.55)                         # the hand is wherever it is: no jump to it
+    pos, _ = fk(out.joint_targets)
+    assert pos == pytest.approx([0.25, 0.05, 0.03], abs=0.004)
+    pos, _ = fk(keys_settle(tp, clock, n=40, u=0.55, v=0.4).joint_targets)
+    assert pos[2] == pytest.approx(0.03 + 0.05, abs=0.006)            # and then follows it relatively

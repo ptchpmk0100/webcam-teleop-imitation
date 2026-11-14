@@ -227,3 +227,88 @@ def test_the_simulation_window_is_refreshed_with_a_smooth_amount_of_simulated_ti
                 viewer=Viewer())
     steps = np.diff(times[5:])
     assert steps.min() >= 0.025 and steps.max() <= 0.045      # about 33 ms of simulated time per refresh, never 0 or 50 ms
+
+
+# ---- redesign (Q14 fallback): W/S keys for forward-back, timed attempts on fixed seeds (Q1 bar: 5 of 10 in 30 s) ----
+
+def test_the_forward_key_offset_reaches_the_teleop_frame():
+    clock = FakeClock()
+    env = Env(); env.reset(0)
+    frames = []
+    class Spy(Teleop):
+        def update(self, frame):
+            frames.append(frame); return super().update(frame)
+    run_session(FakeCamera(clock), FakeTracker(), Spy(), env, secs=0.3, clock=clock, engaged=lambda: True,
+                forward=lambda: 0.03)
+    assert frames[-1].forward_m == pytest.approx(0.03)
+
+
+def cube_at(env):
+    return env.cube_position()[:2].round(4).tolist()
+
+
+def test_an_attempt_that_runs_out_of_time_is_recorded_as_failed_and_the_next_seed_is_loaded():
+    from teleop_il.live import Attempts
+    clock = FakeClock()
+    env = Env(); env.reset(3)
+    attempts = Attempts(seeds=(3, 4), limit_s=1.0)
+    run_session(FakeCamera(clock), FakeTracker(), Teleop(), env, secs=1.5, clock=clock, engaged=lambda: True,
+                attempts=attempts)
+    assert [(r["seed"], r["outcome"]) for r in attempts.results] == [(3, "time up")]
+    assert cube_at(env) == cube_at(_fresh(4))
+    assert env.data.time < 0.6                                  # the simulation restarted with the new attempt
+
+
+def _fresh(seed):
+    e = Env(); e.reset(seed); return e
+
+
+def test_a_lift_judged_by_the_simulation_ends_the_attempt_as_a_success():
+    from teleop_il.live import Attempts
+    class LiftedAfterHalfASecond(Env):
+        def success(self): return self.data.time > 0.5
+    clock = FakeClock()
+    env = LiftedAfterHalfASecond(); env.reset(3)
+    attempts = Attempts(seeds=(3, 4), limit_s=30.0)
+    run_session(FakeCamera(clock), FakeTracker(), Teleop(), env, secs=0.8, clock=clock, engaged=lambda: True,
+                attempts=attempts)
+    assert attempts.results[0]["outcome"] == "lifted" and attempts.results[0]["success"]
+    assert attempts.results[0]["seconds"] == pytest.approx(0.5, abs=0.1)
+
+
+def test_a_counted_trial_stops_the_session_after_the_last_seed():
+    from teleop_il.live import Attempts
+    clock = FakeClock()
+    env = Env(); env.reset(3)
+    attempts = Attempts(seeds=(3, 4), limit_s=0.5, counted=True)
+    stats = run_session(FakeCamera(clock), FakeTracker(), Teleop(), env, secs=10.0, clock=clock,
+                        engaged=lambda: True, attempts=attempts)
+    assert len(attempts.results) == 2 and attempts.done
+    assert stats.seconds < 1.5
+
+
+def test_restarting_an_attempt_reloads_the_same_seed_and_records_nothing():
+    from teleop_il.live import Attempts
+    clock = FakeClock()
+    env = Env(); env.reset(3)
+    attempts = Attempts(seeds=(3, 4), limit_s=30.0)
+    def preview(image, result, out, fps):
+        if 0.5 < clock.now < 0.55:
+            attempts.restart()
+    run_session(FakeCamera(clock), FakeTracker(), Teleop(), env, secs=0.8, clock=clock, engaged=lambda: True,
+                attempts=attempts, preview=preview)
+    assert attempts.results == [] and attempts.seed == 3
+    assert env.data.time < 0.4
+
+
+def test_skipping_an_attempt_records_it_as_failed():
+    from teleop_il.live import Attempts
+    clock = FakeClock()
+    env = Env(); env.reset(3)
+    attempts = Attempts(seeds=(3, 4), limit_s=30.0)
+    def preview(image, result, out, fps):
+        if 0.5 < clock.now < 0.55:
+            attempts.skip()
+    run_session(FakeCamera(clock), FakeTracker(), Teleop(), env, secs=0.8, clock=clock, engaged=lambda: True,
+                attempts=attempts, preview=preview)
+    assert [(r["seed"], r["outcome"], r["success"]) for r in attempts.results] == [(3, "skipped", False)]

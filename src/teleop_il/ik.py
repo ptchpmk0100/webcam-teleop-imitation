@@ -56,8 +56,14 @@ class ArmController:
     def home_joints(self) -> np.ndarray:
         return self._home_q.copy()
 
-    def reset(self) -> None:
-        self._cfg = mink.Configuration(self._model, self._home_q.copy())
+    def reset(self, joints=None) -> None:
+        """Start the IK from the home pose, or from `joints` (6 values) when another controller had the arm."""
+        q = self._home_q.copy() if joints is None else np.asarray(joints, dtype=float).copy()
+        self._cfg = mink.Configuration(self._model, q)
+
+    def position(self) -> np.ndarray:
+        """Gripper-frame position of the controller's current joint values (forward kinematics)."""
+        return self._cfg.get_transform_frame_to_world("gripperframe", "site").translation().copy()
 
     def track(self, target_position, iterations: int = 8) -> np.ndarray:
         """Move the internal configuration towards the target; return the 6 joint values (gripper untouched)."""

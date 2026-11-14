@@ -31,9 +31,12 @@ class SessionLog:
         return self._rows[index]["image"]
 
     def add(self, *, t: float, detected: bool, engaged: bool, info: dict, ee, gripper: float, key_closed: bool,
-            image=None, world=None) -> None:
+            image=None, world=None, cube=None, forward_m: float = 0.0, attempt: int = 0) -> None:
         self._rows.append({
             "t": t, "detected": detected, "engaged": engaged, "gripper": gripper, "key_closed": key_closed,
+            "cube": _NAN3 if cube is None else np.asarray(cube, float), "forward_m": float(forward_m),
+            "attempt": int(attempt), "assist": str(info.get("assist", "")),
+            "grasp_distance_m": float(info.get("grasp_distance_m", np.nan)),
             "raw": np.asarray(info.get("raw", _NAN3), float), "filtered": np.asarray(info.get("filtered", _NAN3), float),
             "target": np.asarray(info.get("target", _NAN3), float), "ee": np.asarray(ee, float),
             "pinch_gap_m": float(info.get("pinch_gap_m", np.nan)),

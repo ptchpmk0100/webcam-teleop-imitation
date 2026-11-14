@@ -1,6 +1,7 @@
 """Live adapter: webcam -> MediaPipe hand landmarks -> teleop core -> simulated arm, paced in real time.
 
-Run with `make demo`. SPACE in the simulation window toggles the clutch (arm follows the hand only while engaged).
+Run with `make demo` (practice) or `make trial` (10 counted attempts). Keys in the window: SPACE clutch (the arm
+follows the hand only while engaged), G gripper, W/S forward and back, R restart the attempt, N skip it, Q quit.
 """
 from __future__ import annotations
 
@@ -10,6 +11,9 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
+
+# The demo window renders offscreen and shows the pictures with OpenCV; this must be chosen before MuJoCo is imported.
+os.environ.setdefault("MUJOCO_GL", "egl")
 
 import numpy as np
 
@@ -37,18 +41,76 @@ def user_view(cam) -> None:
     cam.lookat[:] = (0.2, 0.0, 0.07)
 
 
-def landmarks_to_frame(t: float, result, engage: bool, close_gripper: bool = False) -> HandFrame:
+def landmarks_to_frame(t: float, result, engage: bool, close_gripper: bool = False,
+                       forward_m: float = 0.0) -> HandFrame:
     """Turn a MediaPipe HandLandmarker result into the teleop core's input frame."""
     if not result.hand_landmarks:
-        return HandFrame(t=t, image_landmarks=None, world_landmarks=None, engage=engage, close_gripper=close_gripper)
+        return HandFrame(t=t, image_landmarks=None, world_landmarks=None, engage=engage, close_gripper=close_gripper,
+                         forward_m=forward_m)
     image = np.array([[p.x, p.y, p.z] for p in result.hand_landmarks[0]])
     world = np.array([[p.x, p.y, p.z] for p in result.hand_world_landmarks[0]])
-    return HandFrame(t=t, image_landmarks=image, world_landmarks=world, engage=engage, close_gripper=close_gripper)
+    return HandFrame(t=t, image_landmarks=image, world_landmarks=world, engage=engage, close_gripper=close_gripper,
+                     forward_m=forward_m)
+
+
+class Attempts:
+    """Timed attempts on fixed seeds (grill Q1: at most 30 s each; success read from the simulation, never reported).
+
+    `counted=True` is a trial: the session ends after the last seed. Otherwise it is practice and the seeds repeat.
+    The keys call restart() (same seed again, nothing recorded) and skip() (recorded as a failure)."""
+
+    def __init__(self, seeds, limit_s: float = 30.0, counted: bool = False) -> None:
+        self.seeds, self.limit_s, self.counted = tuple(seeds), limit_s, counted
+        self.results: list[dict] = []
+        self._index, self._start, self._pending = 0, None, None
+
+    @property
+    def seed(self) -> int:
+        return self.seeds[self._index % len(self.seeds)]
+
+    @property
+    def number(self) -> int:
+        return self._index + 1
+
+    @property
+    def done(self) -> bool:
+        return self.counted and self._index >= len(self.seeds)
+
+    def elapsed(self, t: float) -> float:
+        return 0.0 if self._start is None else t - self._start
+
+    def restart(self) -> None:
+        self._pending = "restart"
+
+    def skip(self) -> None:
+        self._pending = "skipped"
+
+    def check(self, t: float, lifted: bool, assist_fired: int = 0) -> bool:
+        """Called once per frame; True means: load `seed` into the simulation and start the next attempt now."""
+        if self._start is None:
+            self._start = t
+        pending, self._pending = self._pending, None
+        if pending == "restart":
+            self._start = t
+            return True
+        outcome = "lifted" if lifted else pending if pending else "time up" if t - self._start > self.limit_s else None
+        if outcome is None:
+            return False
+        self.results.append({"seed": self.seed, "outcome": outcome, "success": outcome == "lifted",
+                             "seconds": round(t - self._start, 2), "assist_fired": int(assist_fired),
+                             "counted": self.counted})
+        self._index += 1
+        self._start = t
+        return not self.done
 
 
 def run_session(camera, tracker, teleop, env, *, secs: float, clock, engaged, viewer=None, preview=None,
-                status=None, close_gripper=lambda: False, log=None) -> SessionStats:
-    """Run the live loop for `secs` seconds of `clock` time; the simulation advances in real time at 20 Hz."""
+                status=None, close_gripper=lambda: False, forward=lambda: 0.0, attempts=None,
+                log=None) -> SessionStats:
+    """Run the live loop for `secs` seconds of `clock` time; the simulation advances in real time at 20 Hz.
+
+    With `attempts`, each attempt ends on a lift (judged by `env.success()`) or its time limit, and the next seed is
+    loaded into the simulation; a counted trial ends the session after its last seed."""
     stages = {"read": [], "tracking": [], "teleop": [], "sim": []}
     frames = detected = 0
     sim_t = 0.0
@@ -64,7 +126,7 @@ def run_session(camera, tracker, teleop, env, *, secs: float, clock, engaged, vi
             result = tracker.detect(image, int((b - t0) * 1000))
             c = clock()
             key_closed = close_gripper()
-            frame = landmarks_to_frame(b - t0, result, engaged(), key_closed)
+            frame = landmarks_to_frame(b - t0, result, engaged(), key_closed, forward())
             out = teleop.update(frame)
             d = clock()
             while sim_t + env.model.opt.timestep <= clock() - t0:     # physics in 5 ms slices: smooth motion, not 50 ms jumps
@@ -77,11 +139,13 @@ def run_session(camera, tracker, teleop, env, *, secs: float, clock, engaged, vi
             if viewer is not None:
                 viewer.sync()
             e = clock()
-            reached = reached or env.success()
+            lifted = env.success()
+            reached = reached or lifted
             if log is not None:
                 log.add(t=b - t0, detected=bool(result.hand_landmarks), engaged=out.engaged, info=out.info,
                         ee=env.ee_position(), gripper=float(out.joint_targets[5]), key_closed=key_closed,
-                        image=frame.image_landmarks, world=frame.world_landmarks)
+                        image=frame.image_landmarks, world=frame.world_landmarks, cube=env.cube_position(),
+                        forward_m=frame.forward_m, attempt=attempts.number if attempts is not None else 0)
             frames += 1
             detected += bool(result.hand_landmarks)
             for name, dur in zip(stages, (b - a, c - b, d - c, e - d)):
@@ -91,6 +155,13 @@ def run_session(camera, tracker, teleop, env, *, secs: float, clock, engaged, vi
             if status is not None and clock() - last_status >= 1.0:
                 last_status = clock()
                 status(frames, detected, frames / max(clock() - t0, 1e-6), out)
+            if attempts is not None:
+                if attempts.check(clock() - t0, lifted, out.info.get("assist_fired", 0)):
+                    env.reset(attempts.seed)
+                    teleop.reset()
+                    sim_t = clock() - t0                           # the new attempt's physics starts now
+                elif attempts.done:
+                    break
     finally:
         camera.close()
     seconds = clock() - t0
@@ -200,85 +271,126 @@ class HandTracker:
         self._landmarker.close()
 
 
-def _draw_preview(cv2, key_closed):
+TRIAL_SEEDS = tuple(range(500, 510))       # the counted trial (same seeds as the prototype trials)
+PRACTICE_SEEDS = tuple(range(600, 620))    # practice uses other cubes, so the trial is not rehearsed
+FORWARD_STEP_M = 0.005                     # one W/S press; holding the key repeats it (about 15 cm/s)
+
+
+def _window(cv2, display, state, attempts, env):
+    """The demo window's per-frame callback: draw everything, handle the keys. Returns False to quit."""
+    seen_results = {"n": 0, "banner": "", "until": 0.0}
+
     def preview(image, result, out, fps):
-        shown = cv2.flip(image, 1)                    # mirrored, like a selfie view
-        if result.hand_landmarks:
-            h, w = shown.shape[:2]
+        now = time.perf_counter()
+        if len(attempts.results) > seen_results["n"]:
+            seen_results["n"] = len(attempts.results)
+            last = attempts.results[-1]
+            seen_results["banner"], seen_results["until"] = ("LIFTED!" if last["success"] else last["outcome"]), now + 1.5
+            print(f"attempt {len(attempts.results)}: {last['outcome']} in {last['seconds']:.1f} s "
+                  f"(assist fired {last['assist_fired']}x)", flush=True)
+        info, ee = out.info, env.ee_position()
+        assist = info.get("assist", "off")
+        lifted = sum(r["success"] for r in attempts.results)
+        lines = [
+            f"{fps:4.1f} FPS   hand {'seen' if result.hand_landmarks else 'NOT SEEN'}",
+            "ENGAGED (SPACE releases)" if out.engaged else "clutch released: press SPACE",
+            f"gripper {'CLOSED' if state['key_closed'] else 'open'} (G)   forward {100 * state['forward']:+.1f} cm (W/S)",
+            f"assist {'ACTIVE' if assist == 'active' else 'ready: press G' if assist == 'ready' else '-'}"
+            f"   fired {info.get('assist_fired', 0)}x",
+            f"{100 * info.get('grasp_distance_m', float('nan')):4.1f} cm from the grasp point (assist below 5)",
+            f"gripper {100 * ee[2]:4.1f} cm above the table",
+            f"attempt {attempts.number}{'/' + str(len(attempts.seeds)) if attempts.counted else ' (practice)'}"
+            f"   {max(attempts.limit_s - attempts.elapsed(now - state['t0']), 0):4.1f} s left",
+            f"lifted {lifted} of {len(attempts.results)}",
+            "R restart  N skip  Q quit",
+        ]
+        banner = seen_results["banner"] if now < seen_results["until"] else ""
+        shown = display.compose(image, lines, assist=assist, banner=banner)
+        if result.hand_landmarks:                       # landmarks on the mirrored camera tile (top right)
+            h, w = display._small_size
+            x0 = shown.shape[1] - w
             for p in result.hand_landmarks[0]:
-                cv2.circle(shown, (int((1 - p.x) * w), int(p.y * h)), 3, (0, 255, 0), -1)
-        text = f"{fps:4.1f} FPS  {'ENGAGED' if out.engaged else 'clutch released'}"
-        if out.tracking_lost:
-            text += "  HAND LOST"
-        cv2.putText(shown, text, (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
-        gap = out.info.get("pinch_gap_m", float("nan"))
-        grip = "GRIPPER CLOSED" if out.joint_targets[5] < 0 else "gripper open"
-        cv2.putText(shown, f"pinch gap {100 * gap:4.1f} cm (closes < 3, opens > 5)  {grip}{' (key)' if key_closed() else ''}",
-                    (10, 52), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 255), 2)
-        cv2.imshow("hand tracking (q to quit)", shown)
-        return cv2.waitKey(1) & 0xFF != ord("q")
+                cv2.circle(shown, (x0 + int((1 - p.x) * w), int(p.y * h)), 2, (0, 255, 0), -1)
+        cv2.imshow("webcam teleop (Q quits)", shown)
+        k = cv2.waitKey(1) & 0xFF
+        if k in (ord("q"), 27):
+            return False
+        if k == ord(" "):
+            state["engaged"] = not state["engaged"]
+        elif k == ord("g"):
+            state["key_closed"] = not state["key_closed"]
+        elif k == ord("w"):
+            state["forward"] += FORWARD_STEP_M
+        elif k == ord("s"):
+            state["forward"] -= FORWARD_STEP_M
+        elif k == ord("r"):
+            attempts.restart()
+        elif k == ord("n"):
+            attempts.skip()
+        return True
     return preview
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="Drive the simulated SO-101 with your hand through the webcam.")
-    ap.add_argument("--secs", type=float, default=600.0, help="stop after this many seconds")
+    ap = argparse.ArgumentParser(description="Drive the simulated SO-101 with your hand through the webcam. "
+                                 "Hand left-right and up-down move the gripper, W/S move it forward and back, "
+                                 "G closes it; near the cube the grasp assist finishes the grasp, you lift.")
+    ap.add_argument("--secs", type=float, default=1800.0, help="stop after this many seconds")
     ap.add_argument("--exposure", type=int, default=330, help="manual exposure in 100 us units (lamp needed)")
     ap.add_argument("--auto-exposure", action="store_true", help="use the camera's auto exposure (about 17 FPS here)")
-    ap.add_argument("--headless", action="store_true", help="no windows; clutch always engaged; prints timing")
-    ap.add_argument("--no-preview", action="store_true", help="no camera preview window")
-    ap.add_argument("--seed", type=int, default=0, help="cube position seed")
+    ap.add_argument("--headless", action="store_true", help="no window; clutch always engaged; prints timing")
+    ap.add_argument("--trial", action="store_true",
+                    help=f"counted trial: {len(TRIAL_SEEDS)} attempts on seeds {TRIAL_SEEDS[0]}-{TRIAL_SEEDS[-1]}, "
+                         "results saved under runs/")
+    ap.add_argument("--attempt-secs", type=float, default=30.0, help="time limit per attempt (grill Q1/Q8: 30 s)")
+    ap.add_argument("--no-assist", action="store_true", help="switch the grasp assist off")
     ap.add_argument("--log", type=Path, help="save a per-frame session log to this NEW .npz file (then run teleop_il.diagnose on it)")
     args = ap.parse_args(argv)
 
+    from teleop_il.assist import AssistedTeleop
     from teleop_il.env import Env
     from teleop_il.teleop import Teleop
     if not MODEL_PATH.exists():
         print(f"missing {MODEL_PATH}; run `make setup`", file=sys.stderr)
         return 2
-    env = Env()
-    env.reset(args.seed)
-    teleop = Teleop()
-    tracker = HandTracker()
-    camera = LatestFrameCamera(Camera(exposure=None if args.auto_exposure else args.exposure))
     if args.log is not None and args.log.exists():
         print(f"{args.log} already exists; logs go to new files", file=sys.stderr)
         return 2
-    state = {"engaged": args.headless, "key_closed": False}
-    viewer = preview = None
+    attempts = Attempts(TRIAL_SEEDS if args.trial else PRACTICE_SEEDS, limit_s=args.attempt_secs, counted=args.trial)
+    env = Env()
+    env.reset(attempts.seed)
+    teleop = Teleop() if args.no_assist else AssistedTeleop(Teleop(), ee=env.ee_position, cube=env.cube_position)
+    tracker = HandTracker()
+    camera = LatestFrameCamera(Camera(exposure=None if args.auto_exposure else args.exposure))
+    state = {"engaged": args.headless, "key_closed": False, "forward": 0.0, "t0": time.perf_counter()}
+    preview = display = None
     if not args.headless:
-        import mujoco.viewer
+        import cv2
 
-        def on_key(keycode):
-            if keycode == 32:                          # SPACE toggles the clutch
-                state["engaged"] = not state["engaged"]
-                print("clutch", "ENGAGED" if state["engaged"] else "released")
-            elif keycode == ord("G"):                  # G toggles the gripper (the pinch can be hidden from the camera)
-                state["key_closed"] = not state["key_closed"]
-                print("gripper key", "CLOSED" if state["key_closed"] else "released")
-        viewer = mujoco.viewer.launch_passive(env.model, env.data, key_callback=on_key)
-        user_view(viewer.cam)
-        if not args.no_preview:
-            import cv2
-            preview = _draw_preview(cv2, lambda: state["key_closed"])
-        print("In the simulation window: SPACE toggles the clutch, G toggles the gripper (a pinch closes it too).")
-        print("Hold your hand in view, press SPACE, then move.")
+        from teleop_il.display import Display
+        display = Display(env)
+        preview = _window(cv2, display, state, attempts, env)
+        print("Keys (in the window): SPACE clutch, G gripper, W/S forward/back, R restart, N skip, Q quit.")
+        print("Hold your hand in view, press SPACE, then move. Near the cube, press G: the robot finishes the grasp.")
 
     def status(frames, detected, fps, out):
-        print(f"  {fps:5.1f} FPS | hand detected {100 * detected / frames:3.0f}% | "
-              f"{'engaged' if out.engaged else 'released'}{' | HAND LOST' if out.tracking_lost else ''}"
-              f"{' | cube lifted!' if env.success() else ''}")
+        if args.headless:
+            print(f"  {fps:5.1f} FPS | hand detected {100 * detected / frames:3.0f}% | "
+                  f"{'engaged' if out.engaged else 'released'}{' | HAND LOST' if out.tracking_lost else ''}")
 
     from teleop_il.diagnose import SessionLog
     log = SessionLog() if args.log is not None else None
     try:
+        state["t0"] = time.perf_counter()
         stats = run_session(camera, tracker, teleop, env, secs=args.secs, clock=time.perf_counter,
-                            engaged=lambda: state["engaged"], viewer=viewer, preview=preview, status=status,
-                            close_gripper=lambda: state["key_closed"], log=log)
+                            engaged=lambda: state["engaged"], preview=preview, status=status,
+                            close_gripper=lambda: state["key_closed"], forward=lambda: state["forward"],
+                            attempts=attempts, log=log)
     finally:
         tracker.close()
-        if viewer is not None:
-            viewer.close()
+        if display is not None:
+            import cv2
+            cv2.destroyAllWindows()
     if log is not None and len(log):
         log.save(args.log)
         print(f"session log saved to {args.log}; summarise with: make diagnose LOG={args.log}")
@@ -286,6 +398,20 @@ def main(argv=None) -> int:
           f"hand detected in {100 * stats.detected_frames / max(stats.frames, 1):.0f}% of frames")
     for name, (mean, p95) in stats.stage_ms.items():
         print(f"  {name:9s} mean {mean:6.2f} ms   p95 {p95:6.2f} ms")
+    if attempts.results:
+        k = sum(r["success"] for r in attempts.results)
+        print(f"{'TRIAL' if args.trial else 'practice'}: lifted {k} of {len(attempts.results)} attempts"
+              f"{' (bar: 5 of 10)' if args.trial else ''}; assist "
+              f"{'off' if args.no_assist else 'on'}")
+    if args.trial and attempts.results:
+        import json
+        out_dir = Path(__file__).resolve().parents[2] / "runs"
+        out_dir.mkdir(exist_ok=True)
+        path = out_dir / f"trial_{time.strftime('%Y%m%d_%H%M%S')}.json"
+        with open(path, "x") as f:                                  # "x": never overwrites an earlier trial
+            json.dump({"assist": not args.no_assist, "attempt_secs": args.attempt_secs,
+                       "results": attempts.results}, f, indent=1)
+        print(f"trial results saved to {path}")
     verdict = "PASS" if stats.fps >= RECORDING_FPS else "FAIL"
     print(f"recording-mode check (>= {RECORDING_FPS:.0f} FPS): {verdict}")
     return 0 if verdict == "PASS" else 1

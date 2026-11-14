@@ -62,6 +62,10 @@ class Env:
         """Where the gripper frame really is now, read from the simulation (not the commanded target)."""
         return self.data.site_xpos[self._ee_site].copy()
 
+    def cube_position(self) -> np.ndarray:
+        """Where the cube centre is now, read from the simulation (the grasp assist uses it; a policy never does)."""
+        return self.data.qpos[self._cube_qadr:self._cube_qadr + 3].copy()
+
     @property
     def action_bounds(self) -> tuple[np.ndarray, np.ndarray]:
         """Lower and upper joint-target limits (5 arm joints plus the gripper)."""
