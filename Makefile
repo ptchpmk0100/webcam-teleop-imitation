@@ -1,4 +1,4 @@
-.PHONY: setup test demo trial diagnose
+.PHONY: setup test demo trial diagnose parity
 setup:
 	uv sync
 	./scripts/fetch_assets.sh
@@ -14,3 +14,6 @@ trial: setup
 
 diagnose:
 	env -u PYTHONPATH uv run python -m teleop_il.diagnose $(LOG)
+
+parity: setup
+	env -u PYTHONPATH uv run python -m teleop_il.cpp_parity
