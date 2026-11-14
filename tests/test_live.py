@@ -405,3 +405,73 @@ def test_the_panel_says_how_high_the_cube_is_against_the_5_cm_needed():
     from teleop_il.live import lift_line
     assert lift_line(0.039, held_s=0.0) == "cube up 3.9 cm (need 5.0 for 1 s)"
     assert lift_line(0.061, held_s=0.45) == "cube up 6.1 cm - hold it: 0.5 of 1 s"
+
+
+# ---- ticket 10: record mode. One dataset episode per attempt, at 20 Hz, kept only if lifted without tracking loss ----
+
+class LiftedAfter(Env):
+    """Success read as soon as the simulated time passes `after` seconds (the loop under test, not the physics)."""
+    def __init__(self, after):
+        super().__init__(); self.after = after
+    def success(self):
+        return self.data.time > self.after
+
+
+def record_session(tmp_path, env, secs, tracker=None, restart_at=None, limit_s=30.0):
+    from teleop_il.live import Attempts
+    from teleop_il.recorder import EpisodeRecorder
+    clock = FakeClock()
+    attempts = Attempts(seeds=(3, 4, 5), limit_s=limit_s)
+    rec = EpisodeRecorder(tmp_path / "demos", source="human+assist")
+    preview = None
+    if restart_at is not None:
+        def preview(image, result, out, fps):
+            if restart_at < clock.now < restart_at + 0.04:
+                attempts.restart()
+    env.reset(attempts.seed)
+    run_session(FakeCamera(clock), tracker or FakeTracker(), Teleop(), env, secs=secs, clock=clock,
+                engaged=lambda: True, attempts=attempts, recorder=rec, preview=preview)
+    rec.close()
+    return rec, attempts
+
+
+def test_a_lifted_attempt_is_saved_as_a_valid_episode_with_one_row_per_20_hz_step(tmp_path):
+    from teleop_il.dataset import read_dataset
+    rec, attempts = record_session(tmp_path, LiftedAfter(0.5), secs=0.8)
+    ds = read_dataset(tmp_path / "demos")
+    (e,) = ds.episodes
+    assert e.success and e.seed == 3 and e.source == "human+assist" and not e.flagged
+    assert np.allclose(np.diff(e.time), 0.05)
+    assert e.time[0] == 0.0 and np.array_equal(e.qpos[0], e.initial_state["qpos"])   # rows come before the step
+    assert e.steps == pytest.approx(0.5 / 0.05, abs=2)
+
+
+def test_attempts_that_run_out_of_time_are_not_kept(tmp_path):
+    from teleop_il.dataset import read_dataset
+    rec, attempts = record_session(tmp_path, Env(), secs=1.3, limit_s=0.6)
+    assert len(attempts.results) == 2 and read_dataset(tmp_path / "demos").episodes == []
+    assert rec.counts == {"kept": 0, "failed": 2, "tracking lost": 0}
+
+
+def test_a_lift_with_the_hand_lost_for_too_long_is_discarded(tmp_path):
+    from teleop_il.dataset import read_dataset
+    rec, _ = record_session(tmp_path, LiftedAfter(0.9), secs=1.2, tracker=FakeTracker(missing=range(5, 20)))
+    assert read_dataset(tmp_path / "demos").episodes == []
+    assert rec.counts["tracking lost"] == 1
+
+
+def test_a_restarted_attempt_records_from_the_restart(tmp_path):
+    from teleop_il.dataset import read_dataset
+    rec, _ = record_session(tmp_path, LiftedAfter(0.5), secs=1.2, restart_at=0.3)
+    (e,) = read_dataset(tmp_path / "demos").episodes
+    assert e.time[0] == 0.0 and e.steps == pytest.approx(10, abs=2)
+
+
+def test_the_recorded_action_is_the_joint_target_sent_to_the_simulation(tmp_path):
+    from teleop_il.dataset import read_dataset
+    record_session(tmp_path, LiftedAfter(0.5), secs=0.8)
+    (e,) = read_dataset(tmp_path / "demos").episodes
+    env = Env()
+    env.restore(e.initial_state)
+    env.step(e.joint_targets[0])                     # the first recorded target, held for one 20 Hz step,
+    assert np.allclose(env.data.qpos, e.qpos[1], atol=1e-3)    # lands where the recording says

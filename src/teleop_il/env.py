@@ -153,6 +153,15 @@ class Env:
         """True once the cube bottom has stayed more than 5 cm above the table for 1 s in a row."""
         return self._succeeded
 
+    @property
+    def at_control_boundary(self) -> bool:
+        """True when the next physics step starts a new 20 Hz control step (the recorder takes its rows here)."""
+        return self._sub_count == 0
+
+    def cube_pose(self) -> np.ndarray:
+        """Cube position and orientation quaternion (7 values), as in the observation."""
+        return self.data.qpos[self._cube_qadr:self._cube_qadr + 7].copy()
+
     def lift_hold_seconds(self) -> float:
         """How long the cube has been above the lift threshold without a break so far (the success rule needs 1 s)."""
         return self._hold_steps * CONTROL_DT

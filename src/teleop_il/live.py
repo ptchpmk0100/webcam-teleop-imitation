@@ -106,16 +106,19 @@ class Attempts:
 
 def run_session(camera, tracker, teleop, env, *, secs: float, clock, engaged, viewer=None, preview=None,
                 status=None, close_gripper=lambda: False, forward=lambda: 0.0, attempts=None, last_key=lambda: "",
-                log=None) -> SessionStats:
+                log=None, recorder=None) -> SessionStats:
     """Run the live loop for `secs` seconds of `clock` time; the simulation advances in real time at 20 Hz.
 
     With `attempts`, each attempt ends on a lift (judged by `env.success()`) or its time limit, and the next seed is
-    loaded into the simulation; a counted trial ends the session after its last seed."""
+    loaded into the simulation; a counted trial ends the session after its last seed. With `recorder` (and
+    `attempts`), every attempt is recorded at 20 Hz and handed to the recorder when it ends (record mode, ticket 10)."""
     stages = {"read": [], "tracking": [], "teleop": [], "sim": []}
     frames = detected = 0
     sim_t = 0.0
     reached = False
     t0 = last_status = clock()
+    if recorder is not None:
+        recorder.start(env, attempts.seed if attempts is not None else 0)
     try:
         while clock() - t0 < secs and (viewer is None or viewer.is_running()):
             a = clock()
@@ -130,6 +133,8 @@ def run_session(camera, tracker, teleop, env, *, secs: float, clock, engaged, vi
             out = teleop.update(frame)
             d = clock()
             while sim_t + env.model.opt.timestep <= clock() - t0:     # physics in 5 ms slices: smooth motion, not 50 ms jumps
+                if recorder is not None:
+                    recorder.row(env, out)
                 if viewer is not None:
                     with viewer.lock():
                         env.substep(out.joint_targets)
@@ -157,10 +162,16 @@ def run_session(camera, tracker, teleop, env, *, secs: float, clock, engaged, vi
                 last_status = clock()
                 status(frames, detected, frames / max(clock() - t0, 1e-6), out)
             if attempts is not None:
-                if attempts.check(clock() - t0, lifted, out.info.get("assist_fired", 0)):
+                ended = len(attempts.results)
+                new_attempt = attempts.check(clock() - t0, lifted, out.info.get("assist_fired", 0))
+                if recorder is not None and len(attempts.results) > ended:
+                    recorder.finish(attempts.results[-1], out.flagged)
+                if new_attempt:
                     env.reset(attempts.seed)
                     teleop.reset()
                     sim_t = clock() - t0                           # the new attempt's physics starts now
+                    if recorder is not None:
+                        recorder.start(env, attempts.seed)         # a restart drops the unfinished recording
                 elif attempts.done:
                     break
     finally:
@@ -395,6 +406,9 @@ def main(argv=None) -> int:
                          "results saved under runs/")
     ap.add_argument("--attempt-secs", type=float, default=30.0, help="time limit per attempt (grill Q1/Q8: 30 s)")
     ap.add_argument("--no-assist", action="store_true", help="switch the grasp assist off")
+    ap.add_argument("--record", action="store_true",
+                    help="record mode (ticket 10): save every lifted attempt without tracking loss as a dataset "
+                         "episode in a new folder runs/demos_<time>/")
     ap.add_argument("--log", type=Path, help="save a per-frame session log to this NEW .npz file (then run teleop_il.diagnose on it)")
     args = ap.parse_args(argv)
 
@@ -431,6 +445,11 @@ def main(argv=None) -> int:
                   f"{'engaged' if out.engaged else 'released'}{' | HAND LOST' if out.tracking_lost else ''}")
 
     from teleop_il.diagnose import SessionLog
+    recorder = None
+    if args.record:
+        from teleop_il.recorder import EpisodeRecorder
+        demo_dir = Path(__file__).resolve().parents[2] / "runs" / f"demos_{time.strftime('%Y%m%d_%H%M%S')}"
+        recorder = EpisodeRecorder(demo_dir, source="human" if args.no_assist else "human+assist")
     log = SessionLog() if args.log is not None else None
     try:
         state["t0"] = time.perf_counter()
@@ -438,7 +457,7 @@ def main(argv=None) -> int:
                             engaged=lambda: state["engaged"], preview=preview, status=status,
                             close_gripper=lambda: state["key_closed"], forward=lambda: state["forward"],
                             last_key=lambda: state.pop("key_event", ""),
-                            attempts=attempts, log=log)
+                            attempts=attempts, log=log, recorder=recorder)
     finally:
         tracker.close()
         if display is not None:
@@ -458,6 +477,17 @@ def main(argv=None) -> int:
         print(f"{'TRIAL' if args.trial else 'practice'}: lifted {k} of {len(attempts.results)} attempts"
               f"{' (bar: 5 of 10)' if args.trial else ''}; assist "
               f"{'off' if args.no_assist else 'on'}")
+    if recorder is not None:
+        recorder.close()
+        c = recorder.counts
+        print(f"record mode: kept {c['kept']} episodes in {demo_dir} (not kept: {c['failed']} failed, "
+              f"{c['tracking lost']} with the hand lost too long)")
+    if attempts.results:
+        done = [r for r in attempts.results if r["outcome"] != "skipped"]
+        lifts = [r["seconds"] for r in attempts.results if r["success"]]
+        print(f"teleop baseline: {len(lifts)} of {len(attempts.results)} attempts lifted "
+              f"({100 * len(lifts) / len(attempts.results):.0f} percent, {len(done)} not skipped); median time of a "
+              f"lift {np.median(lifts) if lifts else float('nan'):.1f} s")
     if args.trial and attempts.results:
         import json
         out_dir = Path(__file__).resolve().parents[2] / "runs"
