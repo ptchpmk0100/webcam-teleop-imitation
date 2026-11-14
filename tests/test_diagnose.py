@@ -73,3 +73,15 @@ def test_the_summary_measures_the_hand_to_arm_delay_with_the_mapping_signs(tmp_p
     log.save(path)
     lags = [int(x) for x in re.findall(r"real position: (\d+) ms", summarize(path))]
     assert len(lags) == 2 and all(abs(x - 200) <= 20 for x in lags)
+
+
+def test_a_saved_log_keeps_the_full_hand_landmarks_so_the_session_can_be_replayed(tmp_path):
+    log = SessionLog()
+    img, world = np.random.default_rng(0).random((21, 3)), np.random.default_rng(1).random((21, 3))
+    log.add(t=0.0, detected=True, engaged=True, info={}, ee=np.zeros(3), gripper=1.2, key_closed=False, image=img, world=world)
+    log.add(t=0.03, detected=False, engaged=True, info={}, ee=np.zeros(3), gripper=1.2, key_closed=False)
+    path = tmp_path / "run.npz"
+    log.save(path)
+    data = np.load(path)
+    assert np.array_equal(data["image"][0], img) and np.array_equal(data["world"][0], world)
+    assert np.isnan(data["image"][1]).all() and data["image"].shape == (2, 21, 3)

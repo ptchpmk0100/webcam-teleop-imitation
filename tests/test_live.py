@@ -199,3 +199,14 @@ def test_closing_the_reader_stops_its_thread_and_closes_the_camera():
     cam = LatestFrameCamera(inner)
     cam.close()
     assert inner.closed is True and not cam.thread_alive
+
+
+def test_the_session_log_gets_the_landmarks_of_every_detected_frame():
+    from teleop_il.diagnose import SessionLog
+    clock = FakeClock()
+    env = Env(); env.reset(0)
+    log = SessionLog()
+    run_session(FakeCamera(clock), FakeTracker(missing={2}), Teleop(), env, secs=0.5, clock=clock,
+                engaged=lambda: True, log=log)
+    assert not np.isnan(log.last_image).any()                # the last frame had a hand
+    assert np.isnan(log.image_at(1)).all() and not np.isnan(log.image_at(0)).any()   # frame 2 (index 1) had none

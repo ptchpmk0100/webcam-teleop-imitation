@@ -23,12 +23,22 @@ class SessionLog:
     def last_ee(self) -> np.ndarray:
         return self._rows[-1]["ee"]
 
-    def add(self, *, t: float, detected: bool, engaged: bool, info: dict, ee, gripper: float, key_closed: bool) -> None:
+    @property
+    def last_image(self) -> np.ndarray:
+        return self._rows[-1]["image"]
+
+    def image_at(self, index: int) -> np.ndarray:
+        return self._rows[index]["image"]
+
+    def add(self, *, t: float, detected: bool, engaged: bool, info: dict, ee, gripper: float, key_closed: bool,
+            image=None, world=None) -> None:
         self._rows.append({
             "t": t, "detected": detected, "engaged": engaged, "gripper": gripper, "key_closed": key_closed,
             "raw": np.asarray(info.get("raw", _NAN3), float), "filtered": np.asarray(info.get("filtered", _NAN3), float),
             "target": np.asarray(info.get("target", _NAN3), float), "ee": np.asarray(ee, float),
             "pinch_gap_m": float(info.get("pinch_gap_m", np.nan)),
+            "image": np.full((21, 3), np.nan) if image is None else np.asarray(image, float),    # full landmarks: lets a
+            "world": np.full((21, 3), np.nan) if world is None else np.asarray(world, float),    # session be replayed offline
         })
 
     def save(self, path) -> None:

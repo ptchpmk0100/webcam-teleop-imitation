@@ -32,11 +32,11 @@ class TeleopOutput:
 
 @dataclass(frozen=True)
 class TeleopConfig:
-    gain_y: float = 0.8                        # metres per image width, hand towards user's right (u down) = arm -y
-    gain_z: float = 0.8                        # metres per image height, hand up = arm +z
-    gain_x: float = 0.5                        # metres per 100 percent growth of the hand in the image = arm +x
+    gain_y: float = 0.6                        # metres per image width, hand towards user's right (u down) = arm -y
+    gain_z: float = 0.5                        # metres per image height, hand up = arm +z
+    gain_x: float = 0.3                        # metres per 100 percent growth of the hand in the image = arm +x
     image_aspect: float = 4 / 3                # image width over height (640 x 480)
-    low: tuple = (0.08, -0.17, 0.015)          # workspace box the target is clamped to
+    low: tuple = (0.15, -0.17, 0.015)          # workspace box the target is clamped to; x from 0.15 (expert grasps from 0.17)
     high: tuple = (0.32, 0.17, 0.25)
     ik_iterations: int = 8
     pinch_close_below_m: float = 0.03          # thumb-index gap that closes the gripper
@@ -45,8 +45,9 @@ class TeleopConfig:
     min_cutoff_hz: float = 1.0                 # One-Euro filter on the hand position (u, v)
     beta: float = 20.0                         # raised from 5 after Khoi's G5 test: 90 percent of a quick move in 3 frames
     derivative_cutoff_hz: float = 1.0
-    size_min_cutoff_hz: float = 0.8            # separate, heavier filter on the depth cue, which is the noisiest
-    size_beta: float = 2.0
+    size_min_cutoff_hz: float = 0.4            # separate, heavier filter on the depth cue, which is the noisiest
+    size_beta: float = 0.0                     # no speed-up: in the log the depth cue was too noisy to trust fast changes
+    depth_median_frames: int = 9               # median over the last frames removes the 1-2 frame depth spikes seen in the log
 
 
 class OneEuroFilter:
@@ -99,6 +100,7 @@ class Teleop:
         c = self._cfg
         self._filter = OneEuroFilter(c.min_cutoff_hz, c.beta, c.derivative_cutoff_hz)
         self._size_filter = OneEuroFilter(c.size_min_cutoff_hz, c.size_beta, c.derivative_cutoff_hz)
+        self._depth_history: list[float] = []
 
     def _features(self, frame: HandFrame) -> np.ndarray:
         """(u, v, inverse distance). The depth cue is palm image length over palm length across the image plane, so
@@ -112,7 +114,9 @@ class Teleop:
         return np.array([img[_WRIST, 0], img[_WRIST, 1], seen / max(perp, 1e-6)])
 
     def _smooth(self, feats: np.ndarray, dt: float) -> np.ndarray:
-        return np.array([*self._filter(feats[:2], dt), *self._size_filter(feats[2:], dt)])
+        self._depth_history = (self._depth_history + [float(feats[2])])[-self._cfg.depth_median_frames:]
+        depth = np.array([float(np.median(self._depth_history))])
+        return np.array([*self._filter(feats[:2], dt), *self._size_filter(depth, dt)])
 
     def _update_gripper(self, frame: HandFrame) -> None:
         world = frame.world_landmarks
@@ -150,6 +154,7 @@ class Teleop:
             du, dv, ds = feats[0] - self._ref[0], feats[1] - self._ref[1], (feats[2] - self._ref[2]) / self._ref[2]
             wanted = self._ee0 + np.array([c.gain_x * ds, c.gain_y * du, -c.gain_z * dv])
             self._target = np.clip(wanted, c.low, c.high)
+            self._ee0 = self._ee0 + (self._target - wanted)     # no wind-up: the hand can come back from beyond the edge at once
             gripper = self._q[5]
             self._q = self._arm.track(self._target, c.ik_iterations)
             self._q[5] = gripper

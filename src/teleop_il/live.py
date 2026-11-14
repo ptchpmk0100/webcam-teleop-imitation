@@ -5,6 +5,7 @@ Run with `make demo`. SPACE in the simulation window toggles the clutch (arm fol
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import time
 from dataclasses import dataclass
@@ -80,7 +81,8 @@ def run_session(camera, tracker, teleop, env, *, secs: float, clock, engaged, vi
             reached = reached or env.success()
             if log is not None:
                 log.add(t=b - t0, detected=bool(result.hand_landmarks), engaged=out.engaged, info=out.info,
-                        ee=env.ee_position(), gripper=float(out.joint_targets[5]), key_closed=key_closed)
+                        ee=env.ee_position(), gripper=float(out.joint_targets[5]), key_closed=key_closed,
+                        image=frame.image_landmarks, world=frame.world_landmarks)
             frames += 1
             detected += bool(result.hand_landmarks)
             for name, dur in zip(stages, (b - a, c - b, d - c, e - d)):
@@ -288,4 +290,9 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    code = main()
+    sys.stdout.flush()
+    sys.stderr.flush()
+    # Everything is closed and saved by now. MuJoCo's viewer thread segfaults in glfw.terminate() during normal
+    # interpreter shutdown (faulthandler: viewer.py line 531), so leave without running the shutdown handlers.
+    os._exit(code)

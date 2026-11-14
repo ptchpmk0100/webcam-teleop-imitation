@@ -7,9 +7,10 @@ from teleop_il.ik import ArmController
 from teleop_il.teleop import Teleop
 
 # Documented mapping (metres of end-effector motion per unit of hand motion):
-#   hand left-right in the image: 0.8 m per image width, towards the user's right = arm -y  (u decreases -> y decreases)
-#   hand up-down in the image:    0.8 m per image height, up = arm +z
-#   hand size (distance to camera): 0.5 m per 100 percent size change, bigger = arm +x
+#   hand left-right in the image: 0.6 m per image width, towards the user's right = arm -y  (u decreases -> y decreases)
+#   hand up-down in the image:    0.5 m per image height, up = arm +z
+#   hand distance (inverse depth): 0.3 m per 100 percent change, closer = arm +x
+#   (gains lowered from 0.8/0.8/0.5 after Khoi's session log: the hand used 0.5 of the image height, the arm only has 0.23 m)
 
 
 def settle(tp, clock, n=40, **kw):
@@ -34,25 +35,25 @@ def test_arm_does_not_move_before_the_clutch_is_engaged():
     assert np.allclose(first.joint_targets, later.joint_targets)
 
 
-def test_hand_moving_right_by_a_tenth_of_the_image_moves_the_arm_8_cm_to_its_right():
+def test_hand_moving_right_by_a_tenth_of_the_image_moves_the_arm_6_cm_to_its_right():
     tp, clock, start = engaged_teleop()
     out = settle(tp, clock, u=0.4)                         # u decreases = user's right
     pos, _ = fk(out.joint_targets)
-    assert pos - start == pytest.approx([0.0, -0.08, 0.0], abs=0.005)
+    assert pos - start == pytest.approx([0.0, -0.06, 0.0], abs=0.005)
 
 
-def test_hand_moving_up_by_a_tenth_of_the_image_lifts_the_arm_8_cm():
+def test_hand_moving_up_by_a_tenth_of_the_image_lifts_the_arm_5_cm():
     tp, clock, start = engaged_teleop()
     out = settle(tp, clock, v=0.4)                         # v decreases = up in the image
     pos, _ = fk(out.joint_targets)
-    assert pos - start == pytest.approx([0.0, 0.0, 0.08], abs=0.005)
+    assert pos - start == pytest.approx([0.0, 0.0, 0.05], abs=0.005)
 
 
-def test_hand_20_percent_bigger_in_the_image_moves_the_arm_10_cm_forward():
+def test_hand_20_percent_closer_moves_the_arm_6_cm_forward():
     tp, clock, start = engaged_teleop()
     out = settle(tp, clock, size=0.12)                     # closer to the camera
     pos, _ = fk(out.joint_targets)
-    assert pos - start == pytest.approx([0.10, 0.0, 0.0], abs=0.005)
+    assert pos - start == pytest.approx([0.06, 0.0, 0.0], abs=0.005)
 
 
 def test_releasing_the_clutch_freezes_the_arm_and_reengaging_does_not_jump():
@@ -154,7 +155,7 @@ def test_hand_jitter_is_smoothed_to_less_than_half():
         if i >= 60:
             pos, _ = fk(out.joint_targets)
             ys.append(pos[1]); zs.append(pos[2])
-    raw_sigma = 0.8 * 0.004                                # unfiltered arm jitter would be 3.2 mm
+    raw_sigma = 0.6 * 0.004                                # unfiltered arm jitter would be 2.4 mm
     assert np.std(ys) < 0.5 * raw_sigma and np.std(zs) < 0.5 * raw_sigma
 
 
@@ -163,7 +164,7 @@ def test_a_steady_hand_motion_is_followed_with_little_lag():
     for i in range(1, 31):                                 # u from 0.5 to 0.4 over one second
         out = tp.update(hand(clock.t(), u=0.5 - 0.1 * i / 30))
     pos, _ = fk(out.joint_targets)
-    assert abs((pos - start)[1] - (-0.08)) < 0.02          # within 2 cm of where the hand now is
+    assert abs((pos - start)[1] - (-0.06)) < 0.015         # within 1.5 cm of where the hand now is
 
 
 def test_the_flag_survives_releasing_the_clutch_after_a_long_dropout():
@@ -188,7 +189,7 @@ def test_a_quick_hand_move_is_followed_within_100_ms():
     for _ in range(3):                                     # three frames = 100 ms after the hand jumps 0.1 image widths
         out = tp.update(hand(clock.t(), u=0.4))
     pos, _ = fk(out.joint_targets)
-    assert (pos - start)[1] < -0.9 * 0.08                  # at least 90 percent of the 8 cm
+    assert (pos - start)[1] < -0.9 * 0.06                  # at least 90 percent of the 6 cm
 
 
 def pinhole_engaged(**kw):
@@ -201,12 +202,12 @@ def pinhole_engaged(**kw):
     return tp, clock, fk(out.joint_targets)[0]
 
 
-def test_moving_the_flat_hand_from_50_cm_to_45_cm_from_the_camera_moves_the_arm_5_cm_forward():
+def test_moving_the_flat_hand_from_50_cm_to_45_cm_from_the_camera_moves_the_arm_3_cm_forward():
     tp, clock, start = pinhole_engaged(distance=0.5)
     for _ in range(40):
         out = tp.update(pinhole_hand(clock.t(), distance=0.45))
     pos, _ = fk(out.joint_targets)
-    assert (pos - start)[0] == pytest.approx(0.0556, abs=0.01)     # 0.5 / 0.45 - 1 = 11.1 percent, times 0.5 m
+    assert (pos - start)[0] == pytest.approx(0.0333, abs=0.008)    # 0.5 / 0.45 - 1 = 11.1 percent, times 0.3 m
 
 
 @pytest.mark.parametrize("pitch,yaw", [(45, 0), (0, 45), (-40, 30), (-45, 0)])
@@ -221,7 +222,7 @@ def test_tilting_the_hand_moves_the_arm_only_as_far_as_the_palm_really_moved_tow
     rot = (np.array([[np.cos(b), 0, np.sin(b)], [0, 1, 0], [-np.sin(b), 0, np.cos(b)]])
            @ np.array([[1, 0, 0], [0, np.cos(a), -np.sin(a)], [0, np.sin(a), np.cos(a)]]))
     centre = 0.5 + np.mean([(rot @ np.array(p))[2] for p in PALM.values()])
-    assert (pos - start)[0] == pytest.approx(0.5 * (0.5 / centre - 1), abs=0.02)
+    assert (pos - start)[0] == pytest.approx(0.3 * (0.5 / centre - 1), abs=0.015)
 
 
 # ---- gripper key: the pinch can be hidden from the camera, so a key closes the gripper too ----
@@ -250,3 +251,37 @@ def test_the_output_reports_the_pinch_gap_and_the_target_for_the_live_overlay_an
     out = tp.update(hand(clock.t(), pinch_m=0.037, u=0.4))
     assert out.info["pinch_gap_m"] == pytest.approx(0.037)
     assert out.info["target"].shape == (3,) and out.info["raw"].shape == (3,) and out.info["filtered"].shape == (3,)
+
+
+# ---- from Khoi's session log: depth spikes, a target pinned at the workspace edge, and the near-base region ----
+
+def test_a_two_frame_depth_spike_does_not_move_the_arm_forward():
+    """The log showed the raw depth cue jumping 5 -> 11 -> 15 -> 5 within three frames (palm edge-on to the camera)."""
+    tp, clock, start = pinhole_engaged(distance=0.5)
+    before, worst = None, 0.0
+    for i in range(12):
+        frame = pinhole_hand(clock.t())
+        if i in (5, 6):                                    # two frames where the world palm collapses to a fifth of its size
+            frame = type(frame)(t=frame.t, image_landmarks=frame.image_landmarks, engage=True,
+                                world_landmarks=frame.world_landmarks * 0.2)
+        out = tp.update(frame)
+        if i == 4:
+            before = fk(out.joint_targets)[0]
+        elif i > 4:
+            worst = max(worst, abs(fk(out.joint_targets)[0][0] - before[0]))
+    assert worst < 0.01
+
+
+def test_a_hand_that_overshoots_the_arms_range_can_come_back_without_a_dead_zone():
+    tp, clock, start = engaged_teleop()
+    settle(tp, clock, n=40, u=-0.2)                        # far past the right edge of the arm's range (y box is -0.17)
+    out = settle(tp, clock, n=40, u=-0.1)                  # hand returns 0.1 image widths: the arm must follow at once
+    pos, _ = fk(out.joint_targets)
+    assert pos[1] == pytest.approx(-0.17 + 0.6 * 0.1, abs=0.01)
+
+
+def test_the_arm_is_never_asked_to_go_closer_to_its_base_than_the_expert_can_grasp():
+    tp, clock, _ = engaged_teleop()
+    out = settle(tp, clock, n=60, size=0.03)               # hand much further from the camera: asks for a far-back x
+    pos, _ = fk(out.joint_targets)
+    assert pos[0] >= 0.149                                 # expert-proven spawn starts at 0.17; teleop box starts at 0.15
