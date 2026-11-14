@@ -36,7 +36,8 @@ class AssistedTeleop:
 
     `ee` and `cube` are callables returning the gripper frame's and the cube centre's real positions (simulator state).
     Extra info keys: "assist" ("off", "ready" = inside the zone, "active"), "assist_fired" (count since reset),
-    "grasp_distance_m" (horizontal, gripper frame to grasp point).
+    "grasp_distance_m" (horizontal, gripper frame to grasp point), "holding" (after a hand-back the gripper is kept
+    closed until the gripper key changes).
     """
 
     def __init__(self, teleop: Teleop, ee: Callable[[], np.ndarray], cube: Callable[[], np.ndarray],
@@ -51,6 +52,8 @@ class AssistedTeleop:
         self._armed = True
         self._fired = 0
         self._last = None
+        self._holding = False            # after a hand-back: gripper kept closed until the key changes
+        self._key_at_handback = False
 
     @property
     def fired(self) -> int:
@@ -90,11 +93,20 @@ class AssistedTeleop:
             q = self._command(frame.t)
             if not self._active:
                 self._teleop.resume_from(q)
+                # try5 attempt 1: G is a toggle and was open at hand-back twice, so the gripper opened at once and
+                # dropped a cube the assist had just grasped. Keep it closed until the key changes (one press).
+                self._holding, self._key_at_handback = True, frame.close_gripper
             out = self._last
             return TeleopOutput(q, frame.engage, False, out.flagged if out else False,
                                 {**(out.info if out else {}), "assist": "active", "assist_fired": self._fired,
-                                 "grasp_distance_m": distance})
+                                 "grasp_distance_m": distance, "holding": False})
         out = self._teleop.update(frame)
+        if self._holding and frame.close_gripper != self._key_at_handback:
+            self._holding = False
+        if self._holding:
+            q = out.joint_targets.copy()
+            q[5] = GRIPPER_CLOSED
+            out = TeleopOutput(q, out.engaged, out.tracking_lost, out.flagged, out.info)
         closed = out.joint_targets[5] == GRIPPER_CLOSED
         if not closed:
             self._armed = True
@@ -104,5 +116,5 @@ class AssistedTeleop:
             return self.update(frame)
         self._last = out
         info = {**out.info, "assist": "ready" if near else "off", "assist_fired": self._fired,
-                "grasp_distance_m": distance}
+                "grasp_distance_m": distance, "holding": self._holding}
         return TeleopOutput(out.joint_targets, out.engaged, out.tracking_lost, out.flagged, info)

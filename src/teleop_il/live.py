@@ -318,6 +318,20 @@ def apply_key(k: int, state: dict, attempts) -> bool:
     return True
 
 
+def sync_gripper_key(state: dict, info: dict) -> None:
+    """While the grasp assist holds the gripper closed after a hand-back, show the toggle as closed, so the next G
+    press opens it (one press, whatever the key was before)."""
+    if info.get("holding") and not state["key_closed"]:
+        state["key_closed"] = True
+
+
+def lift_line(lift_height_m: float, held_s: float) -> str:
+    """Panel text for lift progress (try5 attempt 1 held the cube but only lifted it 3.9 cm, short of the 5 needed)."""
+    if held_s > 0:
+        return f"cube up {100 * lift_height_m:.1f} cm - hold it: {held_s:.1f} of 1 s"
+    return f"cube up {100 * max(lift_height_m, 0.0):.1f} cm (need 5.0 for 1 s)"
+
+
 def start_of_attempt(state: dict, attempts) -> list[str]:
     """Report results not reported yet; if there are any, a new attempt has begun, so open the gripper again (in try5
     the closed gripper carried over from attempt 3 into attempt 4)."""
@@ -340,6 +354,7 @@ def _window(cv2, display, state, attempts, env):
             seen_results["banner"], seen_results["until"] = ("LIFTED!" if last["success"] else last["outcome"]), now + 1.5
             print(line, flush=True)
         info, ee = out.info, env.ee_position()
+        sync_gripper_key(state, info)
         assist = info.get("assist", "off")
         lifted = sum(r["success"] for r in attempts.results)
         lines = [
@@ -349,7 +364,7 @@ def _window(cv2, display, state, attempts, env):
             f"assist {'ACTIVE' if assist == 'active' else 'ready: press G' if assist == 'ready' else '-'}"
             f"   fired {info.get('assist_fired', 0)}x",
             f"{100 * info.get('grasp_distance_m', float('nan')):4.1f} cm from the grasp point (assist below 5)",
-            f"gripper {100 * ee[2]:4.1f} cm above the table",
+            f"gripper {100 * ee[2]:4.1f} cm up   " + lift_line(env.lift_height(), env.lift_hold_seconds()),
             f"attempt {attempts.number}{'/' + str(len(attempts.seeds)) if attempts.counted else ' (practice)'}"
             f"   {max(attempts.limit_s - attempts.elapsed(now - state['t0']), 0):4.1f} s left",
             f"lifted {lifted} of {len(attempts.results)}",

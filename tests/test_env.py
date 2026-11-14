@@ -203,3 +203,15 @@ def test_the_success_hold_counter_is_the_same_whether_time_advances_in_steps_or_
         for _ in range(10):
             b.substep(action)
     assert a.snapshot()["hold_steps"] == b.snapshot()["hold_steps"] == 3
+
+
+def test_the_hold_time_counts_up_while_the_cube_is_above_the_threshold_and_restarts_below():
+    from teleop_il.env import CUBE_HALF, Env
+    env = Env(); env.reset(0)
+    hold = env.data.qpos[:6].copy()
+    env.place_cube([0.25, 0.1, 0.30])                              # dropped from 30 cm: above 5 cm for a few steps
+    env.step(hold)
+    assert env.lift_hold_seconds() == pytest.approx(0.05)
+    for _ in range(40):
+        env.step(hold)
+    assert env.lift_hold_seconds() == 0.0 and env.lift_height() < 0.001

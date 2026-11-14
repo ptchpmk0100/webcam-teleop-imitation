@@ -128,3 +128,34 @@ def test_a_sloppy_approach_anywhere_in_the_spawn_rectangle_still_lifts_the_cube(
     pick(s, near=near, hover_z=float(rng.uniform(0.05, 0.10)))
     assert s.fired() == 1
     assert s.env.success()
+
+
+# ---- try5 attempt 1: the assist grasped 3 times, but G (a toggle) was open at hand-back, so the gripper opened at
+# ---- once and dropped the cube. After a hand-back the gripper stays closed until the key changes.
+
+def test_releasing_the_key_during_the_assist_does_not_drop_the_cube_at_hand_back():
+    s = Session(cube_xy=(0.23, 0.02))
+    s.hold([0.20, 0.0, 0.07], False, 1.5)
+    s.hold([0.20, 0.0, 0.07], True, 0.3)              # closes: the assist starts
+    s.hold([0.20, 0.0, 0.07], False, 2.0)             # key released while the assist works, and after hand-back
+    assert s.fired() == 1 and s.outputs[-1].info["assist"] != "active"
+    assert s.outputs[-1].joint_targets[5] < 0         # still closed
+    s.hold([0.20, 0.0, 0.17], False, 2.5)             # raise the hand: the cube comes along
+    assert s.env.success()
+
+
+def test_after_hand_back_the_next_key_change_opens_the_gripper():
+    s = Session(cube_xy=(0.23, 0.02))
+    s.hold([0.20, 0.0, 0.07], False, 1.5)
+    s.hold([0.20, 0.0, 0.07], True, 3.0)              # assist runs and hands back with the key still closed
+    assert s.outputs[-1].joint_targets[5] < 0
+    s.hold([0.20, 0.0, 0.07], False, 0.2)             # one press of the toggle
+    assert s.outputs[-1].joint_targets[5] > 1.0
+
+
+def test_the_output_says_when_the_assist_is_holding_the_gripper_closed():
+    s = Session(cube_xy=(0.23, 0.02))
+    s.hold([0.20, 0.0, 0.07], False, 1.5)
+    s.hold([0.20, 0.0, 0.07], True, 0.3)
+    s.hold([0.20, 0.0, 0.07], False, 2.0)
+    assert s.outputs[-1].info["holding"]

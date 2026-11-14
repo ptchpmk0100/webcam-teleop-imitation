@@ -388,3 +388,20 @@ def test_the_session_log_records_which_key_the_window_received():
     run_session(FakeCamera(clock), FakeTracker(), Teleop(), env, secs=0.3, clock=clock, engaged=lambda: True,
                 log=log, last_key=lambda: next(keys))
     assert [r["key"] for r in log._rows[:4]] == ["", "w", "", "s"]
+
+
+def test_while_the_assist_holds_the_gripper_the_key_shows_closed_so_one_press_opens_it():
+    from teleop_il.live import apply_key, sync_gripper_key
+    state, attempts = key_state()
+    sync_gripper_key(state, {"holding": True})
+    assert state["key_closed"]
+    apply_key(ord("g"), state, attempts)
+    assert not state["key_closed"]
+    sync_gripper_key(state, {"holding": False})
+    assert not state["key_closed"]
+
+
+def test_the_panel_says_how_high_the_cube_is_against_the_5_cm_needed():
+    from teleop_il.live import lift_line
+    assert lift_line(0.039, held_s=0.0) == "cube up 3.9 cm (need 5.0 for 1 s)"
+    assert lift_line(0.061, held_s=0.45) == "cube up 6.1 cm - hold it: 0.5 of 1 s"

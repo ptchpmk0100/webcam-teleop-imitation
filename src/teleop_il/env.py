@@ -153,6 +153,10 @@ class Env:
         """True once the cube bottom has stayed more than 5 cm above the table for 1 s in a row."""
         return self._succeeded
 
+    def lift_hold_seconds(self) -> float:
+        """How long the cube has been above the lift threshold without a break so far (the success rule needs 1 s)."""
+        return self._hold_steps * CONTROL_DT
+
     def lift_height(self) -> float:
         """Height of the lowest point of the cube above the table, read from MuJoCo state."""
         a = self._cube_qadr
