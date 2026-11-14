@@ -329,6 +329,16 @@ def apply_key(k: int, state: dict, attempts) -> bool:
     return True
 
 
+def next_demo_seed(runs_dir, first: int = PRACTICE_SEEDS[0]) -> int:
+    """The seed after the highest one recorded in any runs/demos_*/manifest.json, so each record session gets new cube
+    positions (a second session would otherwise repeat the practice seeds from 600)."""
+    import json
+    seen = []
+    for manifest in Path(runs_dir).glob("demos_*/manifest.json"):
+        seen += [int(e["seed"]) for e in json.loads(manifest.read_text()).get("episodes", [])]
+    return max(seen) + 1 if seen else first
+
+
 def sync_gripper_key(state: dict, info: dict) -> None:
     """While the grasp assist holds the gripper closed after a hand-back, show the toggle as closed, so the next G
     press opens it (one press, whatever the key was before)."""
@@ -421,7 +431,12 @@ def main(argv=None) -> int:
     if args.log is not None and args.log.exists():
         print(f"{args.log} already exists; logs go to new files", file=sys.stderr)
         return 2
-    attempts = Attempts(TRIAL_SEEDS if args.trial else PRACTICE_SEEDS, limit_s=args.attempt_secs, counted=args.trial)
+    seeds = TRIAL_SEEDS if args.trial else PRACTICE_SEEDS
+    if args.record and not args.trial:                  # demos: fresh cube positions, never the held-out ones
+        first = next_demo_seed(Path(__file__).resolve().parents[2] / "runs")
+        seeds = tuple(range(first, min(first + 1000, 10_000)))
+        print(f"record mode: cubes from seed {first} on (continuing after earlier sessions)")
+    attempts = Attempts(seeds, limit_s=args.attempt_secs, counted=args.trial)
     env = Env()
     env.reset(attempts.seed)
     teleop = Teleop() if args.no_assist else AssistedTeleop(Teleop(), ee=env.ee_position, cube=env.cube_position)

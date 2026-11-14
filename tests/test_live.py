@@ -475,3 +475,14 @@ def test_the_recorded_action_is_the_joint_target_sent_to_the_simulation(tmp_path
     env.restore(e.initial_state)
     env.step(e.joint_targets[0])                     # the first recorded target, held for one 20 Hz step,
     assert np.allclose(env.data.qpos, e.qpos[1], atol=1e-3)    # lands where the recording says
+
+
+def test_a_new_record_session_continues_after_the_highest_seed_already_recorded(tmp_path):
+    import json
+    from teleop_il.live import next_demo_seed
+    assert next_demo_seed(tmp_path) == 600                         # nothing recorded yet
+    for name, seeds in (("demos_a", [600, 601, 608]), ("demos_b", [612])):
+        (tmp_path / name).mkdir()
+        (tmp_path / name / "manifest.json").write_text(json.dumps({"episodes": [{"seed": s} for s in seeds]}))
+    (tmp_path / "demos_c").mkdir()                                 # a session that crashed before its manifest
+    assert next_demo_seed(tmp_path) == 613
