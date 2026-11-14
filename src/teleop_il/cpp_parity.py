@@ -22,6 +22,7 @@ import numpy as np
 from teleop_il.env import CUBE_HALF, HOME_ARM, HOME_GRIPPER, LIFT_HOLD_SECONDS, LIFT_THRESHOLD, CONTROL_DT, Env
 
 REPO = Path(__file__).resolve().parents[2]
+ORT_DIR = REPO / "assets" / "onnxruntime" / "onnxruntime-linux-x64-1.32.0"    # fetched by scripts/fetch_assets.sh
 HEIGHT_TOLERANCE_M = 0.005
 REQUIRED_AGREEMENT = 98                     # of 100 seeds (frozen threshold, board)
 # Stricter, added in ticket 13: the joint-state trajectory, every control step. End states hide physics changes
@@ -50,8 +51,11 @@ def build(build_dir) -> Path:
     """Configure and build the C++ rollout; returns the executable's path."""
     build_dir = Path(build_dir)
     lib_dir = Path(mujoco.__file__).parent
-    subprocess.run(["cmake", "-S", str(REPO / "cpp"), "-B", str(build_dir), f"-DMUJOCO_DIR={lib_dir}",
-                    "-DCMAKE_BUILD_TYPE=Release"], check=True, capture_output=True, text=True)
+    options = [f"-DMUJOCO_DIR={lib_dir}", "-DCMAKE_BUILD_TYPE=Release"]
+    if ORT_DIR.exists():                                    # the ONNX policy rollout (ticket 14) needs it
+        options.append(f"-DONNXRUNTIME_DIR={ORT_DIR}")
+    subprocess.run(["cmake", "-S", str(REPO / "cpp"), "-B", str(build_dir), *options],
+                   check=True, capture_output=True, text=True)
     subprocess.run(["cmake", "--build", str(build_dir), "--parallel"], check=True, capture_output=True, text=True)
     return build_dir / "rollout"
 

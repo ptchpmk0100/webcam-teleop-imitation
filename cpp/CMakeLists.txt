@@ -18,3 +18,13 @@ target_include_directories(rollout PRIVATE "${MUJOCO_DIR}/include")
 target_link_libraries(rollout PRIVATE ${MUJOCO_LIB})
 set_target_properties(rollout PROPERTIES BUILD_RPATH "${MUJOCO_DIR}")
 target_compile_options(rollout PRIVATE -Wall -Wextra -O2)
+
+# The ONNX policy rollout (ticket 14), built when ONNX Runtime's C/C++ release is given (scripts/fetch_assets.sh
+# fetches the pinned one into assets/onnxruntime/).
+if(ONNXRUNTIME_DIR)
+  add_executable(policy_rollout policy_rollout.cc)
+  target_include_directories(policy_rollout PRIVATE "${MUJOCO_DIR}/include" "${ONNXRUNTIME_DIR}/include")
+  target_link_libraries(policy_rollout PRIVATE ${MUJOCO_LIB} "${ONNXRUNTIME_DIR}/lib/libonnxruntime.so")
+  set_target_properties(policy_rollout PROPERTIES BUILD_RPATH "${MUJOCO_DIR};${ONNXRUNTIME_DIR}/lib")
+  target_compile_options(policy_rollout PRIVATE -Wall -Wextra -O2)
+endif()
