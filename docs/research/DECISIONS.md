@@ -62,3 +62,18 @@ All seven open items are settled. Facts from a sub-agent (menagerie, mink, Media
 - **Repo:** name `webcam-teleop-imitation`, MIT licence, private until the week-1 video exists. Making it public needs a fresh ask.
 - **Out of scope:** place-at-target, other arms, Panda, ROS 2 (thin wrapper stays an option), multiple operators or hands, full camera calibration, paid compute, diffusion.
 - **Deferred to PRD and board:** test seams, PRD and ticket location, one command each for tests and demo.
+
+## Teleop redesign grill (2026-11-14, after three logged sessions; supersedes the G1 mapping where they differ)
+Evidence: sessions `runs/try1-3.npz` (local, not committed). Tracking is fine (90 percent detection, 1/1000-image jitter, 0-50 ms software lag). The control design is not: depth from hand size follows palm tilt, the pinch gap sits in the 3-5 cm band 35 percent of the time (29 gripper switches in 59 s), pinching moves and hides the positioning hand, and nobody can align the asymmetric SO-101 jaws by eye from one 3D view.
+- **Bar (Q1):** after about 10 minutes of practice, at least 5 of 10 attempts lift the cube, at most 30 s each, judged from MuJoCo state.
+- **Shared autonomy (Q2, Q13):** the human controls approach and timing. When the gripper is commanded closed within 3 cm (horizontal) of the cube, a grasp assist moves to the expert's grasp pose (jaw offset, grasp height) over about 0.5 s, closes, and hands control back; the human lifts. Episodes record that the assist fired; the baseline is reported as "human with grasp assist".
+- **Input (Q3, Q14, Q15):** two throwaway prototypes, one session to build and one for Khoi to test, scratchpad only: (b) whole-arm mirroring with MediaPipe's pretrained pose model (Khoi's idea), and (c) right hand positions, left hand commands (fist closes the gripper). Each: 5 minutes practice, then 10 timed attempts on fixed seeds. Winner = more lifts; if neither reaches 5 of 10, fall back to hand for left-right and up-down, keys for forward-back and the gripper, plus the assist.
+- **Two hands (Q11):** allowed (changes G1 "right hand only"), told apart by MediaPipe's handedness label.
+- **Camera (Q4, Q12):** prefer the webcam looking down at the desk (laptop lid tilted forward) so left-right and forward-back are flat image motion. Whether this webcam can see the desk is open (Khoi checks). Front-facing stays as a mode.
+- **Gripper (Q5):** never on the positioning hand: other-hand fist, or a key that works from any window.
+- **Display (Q6):** add a top-down and a side view plus a shadow marker under the gripper.
+- **No detector training (Q7):** pretrained MediaPipe models only; the learning in this project is the imitation policy.
+- **Demo time limit (Q8):** 30 s for recorded human demos; policies are still evaluated at 15 s.
+- **Pipeline (Q9):** tickets 07, 08, 09 and 13 continue on scripted-expert data, always labelled as expert data, while teleop is redesigned.
+- **Retargeting repos (Q10):** `dexsuite/dex-retargeting` and `AnyDexRetarget` (both MIT) retarget human finger keypoints to multi-finger robot hands by optimisation; neither trains detection or positions an arm, and the SO-101 has a one-motion gripper. Recorded as references for a possible later dexterous-hand variant (out of scope now).
+- **Week-1 video (Q16):** recorded after the redesign wins, not with the current mapping.
