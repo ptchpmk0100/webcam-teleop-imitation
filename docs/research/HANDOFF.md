@@ -33,7 +33,7 @@ ticket files in `docs/research/tickets/` (each closed ticket ends with its evide
 Khoi:
 1. Record demos (ticket 11), one session at a time; the log number goes up each time:
    `make demo ARGS="--record --log runs/try12.npz"` (try13, ... after). Each session gets a new folder
-   `runs/demos_<time>/` and continues after the highest seed recorded so far (next: 654). Do not screen-record during
+   `runs/demos_<time>/` and continues after the highest seed recorded so far (next: 655). Do not screen-record during
    a record session (try11 dropped to 19.6 FPS); record the video in a practice session (`make demo`). Tips that worked: W/S for cubes far forward or back; after the
    assist hands back the gripper stays closed, raise the hand until the panel shows the 1 s hold; keep the hand in the
    lamp light (5 of 30 attempts were discarded for losing the hand more than 0.3 s).
