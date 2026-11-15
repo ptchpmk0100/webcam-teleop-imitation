@@ -22,7 +22,7 @@ ticket files in `docs/research/tickets/` (each closed ticket ends with its evide
 | 09 State policy code | done | MLP, 10-step action chunks, ONNX; 80 expert demos give 59/100 |
 | 10 First 25 demos | done (G5) | `runs/demos_25`: 25 valid; baseline 30/30 lifted, median 8.0 s |
 | 11 Record to 100 | **in progress, Khoi** | 50 recorded, 38 clean (12 auto-grasped by a fixed bug); 62 to go |
-| 12 Train + score state policy | waiting for 11 | 50-demo checkpoint: 0/100 (approach median 5.5 cm off, rarely closes) |
+| 12 Train + score state policy | waiting for 11 | 50-demo: 0/100; label-timing bug fixed; relabelled demos 2-3/50 (notes in ticket 12) |
 | 13 C++ physics parity | done | bit-identical to Python on 130 sequences |
 | 14 C++ ONNX policy parity | done | C++ = PyTorch within 6e-7, 100/100 outcomes agree, C++ null checks 0/100 |
 | 15 Image policy code | done | CNN + spatial softmax, ONNX, `train_image` command |
