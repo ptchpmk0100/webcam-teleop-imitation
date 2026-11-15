@@ -116,10 +116,10 @@ class DatasetWriter:
         self._entries.append({"file": path.name, **meta, "steps": e.steps, "sha256": _sha256(path)})
         return path
 
-    def close(self) -> Path:
+    def close(self, extra: dict | None = None) -> Path:
         import mujoco
         manifest = {"format_version": FORMAT_VERSION, "created": _time.strftime("%Y-%m-%dT%H:%M:%S"),
-                    "mujoco": mujoco.__version__, "control_hz": 20, "episodes": self._entries}
+                    "mujoco": mujoco.__version__, "control_hz": 20, **(extra or {}), "episodes": self._entries}
         path = self._folder / MANIFEST
         with open(path, "x") as f:
             json.dump(manifest, f, indent=1)
@@ -190,3 +190,46 @@ def split(index, val_fraction: float = 0.2, seed: int = 0) -> tuple[list[str], l
     train = sorted(f for s in seeds if s not in val_seeds for f in groups[s])
     val = sorted(f for s in val_seeds for f in groups[s])
     return train, val
+
+
+def merge_datasets(sources, out) -> Path:
+    """Copy every episode of the `sources` (validated first) into the NEW dataset folder `out`, in order. The manifest
+    records each source folder and the SHA-256 of its manifest; the sources are only read."""
+    sources = [Path(src) for src in sources]
+    datasets = [read_dataset(src) for src in sources]          # a broken source fails before anything is written
+    writer = DatasetWriter(out)
+    for ds in datasets:
+        for e in ds.episodes:
+            writer.add(e)
+    writer.close({"sources": [{"folder": str(src), "manifest_sha256": _sha256(src / MANIFEST)} for src in sources]})
+    return Path(out)
+
+
+def main(argv=None) -> int:
+    import argparse
+    import sys
+    ap = argparse.ArgumentParser(description="Dataset tools.")
+    sub = ap.add_subparsers(dest="command", required=True)
+    m = sub.add_parser("merge", help="merge dataset folders (e.g. record sessions) into a new one")
+    m.add_argument("out", type=Path)
+    m.add_argument("sources", type=Path, nargs="+")
+    v = sub.add_parser("check", help="validate a dataset folder and summarise it")
+    v.add_argument("folder", type=Path)
+    args = ap.parse_args(argv)
+    try:
+        if args.command == "merge":
+            merge_datasets(args.sources, args.out)
+        ds = read_dataset(args.out if args.command == "merge" else args.folder)
+    except DatasetError as err:
+        print(f"INVALID: {err}", file=sys.stderr)
+        return 1
+    eps = ds.episodes
+    seeds = [e.seed for e in eps]
+    print(f"valid dataset: {len(eps)} episodes, {len(set(seeds))} distinct cube seeds, sources "
+          f"{sorted({e.source for e in eps})}, all lifted: {all(e.success for e in eps)}, "
+          f"none flagged: {not any(e.flagged for e in eps)}, steps {sum(e.steps for e in eps)}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

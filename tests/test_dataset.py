@@ -133,3 +133,32 @@ def test_the_split_is_the_same_every_time_for_the_same_seed_and_differs_for_anot
     index = fake_index(range(50))
     assert split(index, seed=0) == split(index, seed=0)
     assert split(index, seed=0) != split(index, seed=1)
+
+
+# ---- merging record sessions into one dataset (ticket 10): a new folder, sources untouched ----
+
+def test_merging_sessions_gives_one_valid_dataset_with_every_episode_unchanged(tmp_path, expert_episodes):
+    import hashlib
+    from teleop_il.dataset import merge_datasets
+    a = write(tmp_path / "a", expert_episodes[:1])
+    b = write(tmp_path / "b", expert_episodes[1:])
+    before = {p: hashlib.sha256(p.read_bytes()).hexdigest() for d in (a, b) for p in d.iterdir()}
+    merged = read_dataset(merge_datasets([a, b], tmp_path / "all"))
+    assert [e.seed for e in merged.episodes] == [3, 4]
+    for x, y in zip(expert_episodes, merged.episodes):
+        assert np.array_equal(x.qpos, y.qpos) and np.array_equal(x.joint_targets, y.joint_targets)
+    assert [s["manifest_sha256"] for s in merged.manifest["sources"]] == [
+        hashlib.sha256((d / "manifest.json").read_bytes()).hexdigest() for d in (a, b)]
+    assert before == {p: hashlib.sha256(p.read_bytes()).hexdigest() for d in (a, b) for p in d.iterdir()}
+
+
+def test_merging_refuses_an_existing_folder_and_a_broken_source(tmp_path, expert_episodes):
+    from teleop_il.dataset import merge_datasets
+    a = write(tmp_path / "a", expert_episodes[:1])
+    merge_datasets([a], tmp_path / "all")
+    with pytest.raises(FileExistsError):
+        merge_datasets([a], tmp_path / "all")
+    (tmp_path / "broken").mkdir()
+    with pytest.raises(DatasetError):
+        merge_datasets([a, tmp_path / "broken"], tmp_path / "all2")
+    assert not (tmp_path / "all2").exists()                     # nothing half-written
