@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
 # Fetch the SO-101 model from mujoco_menagerie at a pinned commit (Apache-2.0). Idempotent.
 set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"          # absolute, taken before any cd below
 SHA=370c43965323c0944b433b202aac5058b5f907a9
-DEST="$(cd "$(dirname "$0")/.." && pwd)/assets/mujoco_menagerie"
+DEST="$ROOT/assets/mujoco_menagerie"
 if [ -f "$DEST/robotstudio_so101/so101.xml" ]; then
   echo "menagerie present: $DEST"
 else
   mkdir -p "$DEST"
-  cd "$DEST"
-  git init -q
-  git remote add origin https://github.com/google-deepmind/mujoco_menagerie.git
-  git fetch -q --depth 1 origin "$SHA"
-  git checkout -q FETCH_HEAD
-  test -f robotstudio_so101/so101.xml
+  git -C "$DEST" init -q
+  git -C "$DEST" remote add origin https://github.com/google-deepmind/mujoco_menagerie.git
+  git -C "$DEST" fetch -q --depth 1 origin "$SHA"
+  git -C "$DEST" checkout -q FETCH_HEAD
+  test -f "$DEST/robotstudio_so101/so101.xml"
   echo "fetched menagerie $SHA"
 fi
 
 # MediaPipe hand landmarker model (Apache-2.0, Google), pinned by SHA-256.
-MODEL_DIR="$(cd "$(dirname "$0")/.." && pwd)/assets/models"
+MODEL_DIR="$ROOT/assets/models"
 MODEL="$MODEL_DIR/hand_landmarker.task"
 MODEL_SHA=fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1
 if [ ! -f "$MODEL" ]; then
@@ -30,7 +30,7 @@ echo "$MODEL_SHA  $MODEL" | sha256sum -c --quiet - && echo "hand model ok"
 # onnxruntime package, pinned by SHA-256.
 ORT_VERSION=1.32.0
 ORT_SHA=bb169b7e374731730d2ae406fb39de7be4b315f413a9132efe896261c31bb503
-ORT_ROOT="$(cd "$(dirname "$0")/.." && pwd)/assets/onnxruntime"
+ORT_ROOT="$ROOT/assets/onnxruntime"
 ORT_DIR="$ORT_ROOT/onnxruntime-linux-x64-$ORT_VERSION"
 if [ ! -f "$ORT_DIR/include/onnxruntime_cxx_api.h" ]; then
   mkdir -p "$ORT_ROOT"
