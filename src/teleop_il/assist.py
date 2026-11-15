@@ -118,3 +118,46 @@ class AssistedTeleop:
         info = {**out.info, "assist": "ready" if near else "off", "assist_fired": self._fired,
                 "grasp_distance_m": distance, "holding": self._holding}
         return TeleopOutput(out.joint_targets, out.engaged, out.tracking_lost, out.flagged, info)
+
+
+class _PolicyAsTeleop:
+    """A harness policy (obs -> 6 joint targets) behind the Teleop interface the assist wraps."""
+
+    def __init__(self, policy) -> None:
+        self._policy, self.obs = policy, None
+
+    def reset(self) -> None:
+        if hasattr(self._policy, "reset"):
+            self._policy.reset()
+
+    def update(self, frame: HandFrame) -> TeleopOutput:
+        return TeleopOutput(np.asarray(self._policy(self.obs), float), True, False, False, {})
+
+    def resume_from(self, joints) -> None:
+        self.reset()                     # the policy's plans from before the assist are stale: start it afresh
+
+
+class AssistedPolicy:
+    """Policy with assist (PRD-v2 story 16, a labelled secondary number, never the headline): `policy` drives the arm;
+    when it commands the gripper closed inside the assist zone, the grasp assist takes over as it does for the human
+    (move above the grasp point, descend, close), then the policy continues with the gripper held closed. Reads only
+    the observation: the gripper position is forward kinematics of the joints, the cube pose is the observed one."""
+
+    def __init__(self, policy, config: AssistConfig = AssistConfig()) -> None:
+        from teleop_il.controller import GripperController
+        fk = GripperController()
+        self._inner = _PolicyAsTeleop(policy)
+        self._assisted = AssistedTeleop(self._inner, ee=lambda: fk.gripper_position(self._inner.obs["joint_pos"]),
+                                        cube=lambda: self._inner.obs["cube_pose"][:3], config=config)
+
+    @property
+    def fired(self) -> int:
+        """How often the assist fired since the last reset."""
+        return self._assisted.fired
+
+    def reset(self) -> None:
+        self._assisted.reset()
+
+    def __call__(self, obs) -> np.ndarray:
+        self._inner.obs = obs
+        return self._assisted.update(HandFrame(float(obs["time"]), None, None, True)).joint_targets

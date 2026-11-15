@@ -12,7 +12,7 @@ ticket files in `docs/research/tickets/` (each closed ticket ends with its evide
 - **Policy v2 works:** trained on the 100 human demos only, the policy alone lifts 96, 90 and 84 of the 100 held-out
   seeds (training seeds 0, 1, 2; ticket 21). C++ runs it with the same outcome on 100/100 (ticket 24).
 - **With transformed copies (ticket 22): 100, 100, 100 of 100 held-out seeds** (80 human demos + 626 copies in
-  training, seeds 0, 1, 2). Not yet run in C++ (ticket 25).
+  training, seeds 0, 1, 2), the same in C++ (ticket 25).
 - Planning was done on Fable 5.2. **Execution (ticket 18 onward) runs on Opus 5.5** (ticket 22 ran on Fable 5.2 as
   an exception Khoi allowed).
 
@@ -29,14 +29,13 @@ ticket files in `docs/research/tickets/` (each closed ticket ends with its evide
 | 22 Transformed copies | **done** (recovery mode dropped) | held-out, policy alone: 100, 100, 100 (seeds 0-2); 798 copies in `runs/v2_copies_20261115` |
 | 23 Correction rounds | not needed | 22 passed its checkpoint |
 | 24 C++ controller + ONNX v2 | **done** | `make policy-v2-parity RUN=...`: outcomes agree 100/100, controller gap 7e-15 |
-| 25 Final scores | **next**, HITL | both numbers, three training seeds, Python and C++ |
+| 25 Final scores | **built and run; Khoi approves the numbers** | `make final-scores`: human only 96/90/84, with copies 100/100/100, C++ equal on every seed; with assist 96/87/89 and 100/100/100 |
 | 16 Image policy | after 25 | needs Colab or Kaggle |
 | 17 CI, README, release | after 05, 25 | making the repo public needs a separate ask |
 
 ## Next steps
-Ticket 25 (final scores): the numbers exist in Python (human only 96/90/84, with copies 100/100/100). Still to do:
-C++ parity on the three policies with copies (`make policy-v2-parity RUN=...`), policy with assist as the labelled
-secondary number, the teleop baseline and the expert next to them, each printed by one command; Khoi approves.
+Ticket 25: the table is in `tickets/25-final-scores.md` (from `make final-scores`, `runs/final_scores_20261115_200602`).
+Open: Khoi approves the numbers. Then 17 (CI, README, release; needs 05) and 16 (image policy, Colab or Kaggle).
 Held-out seeds 10000-10099 are scored only at the checkpoints in 21, 22, 23 and 25; everything else uses
 development seeds.
 Khoi: ticket 05 when convenient (never screen-record during a record session). The demonstration video is Khoi's own screen recording
@@ -76,7 +75,8 @@ Experiment scripts from the 0/100 investigation (cleaning, relabelling, lever sc
 `uv run python -m teleop_il.train_image --data DIR --images DIR` | `uv run python -m teleop_il.replay DATA OUT`.
 Policy v2: `python -m teleop_il.convert build|gate ...` | `python -m teleop_il.train_v2 --data DIR [--seed S] [--held-out]` |
 `python -m teleop_il.breakdown RUN [--held-out]` | `make policy-v2-parity RUN=runs/v2_policy_...` |
-`python -m teleop_il.transform DATA OUT [--copies N]` | `train_v2 ... --extra COPIES` | `make policy-demo RUN=...`.
+`python -m teleop_il.transform DATA OUT [--copies N]` | `train_v2 ... --extra COPIES` | `make policy-demo RUN=...` |
+`make final-scores HUMAN="RUN RUN RUN" COPIES="RUN RUN RUN"` (held-out; ticket 25 checkpoint only).
 
 ## Known noise and quirks
 - Qt prints "Cannot find font directory" warnings at start: harmless.

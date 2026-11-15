@@ -1,4 +1,4 @@
-.PHONY: setup test demo trial diagnose parity policy-parity policy-v2-parity policy-demo
+.PHONY: setup test demo trial diagnose parity policy-parity policy-v2-parity policy-demo final-scores
 setup:
 	uv sync
 	./scripts/fetch_assets.sh
@@ -26,3 +26,6 @@ policy-v2-parity: setup
 
 policy-demo: setup
 	env -u PYTHONPATH uv run python -m teleop_il.policy_demo $(RUN) $(ARGS)
+
+final-scores: setup
+	env -u PYTHONPATH uv run python -m teleop_il.final_scores --human-only $(HUMAN) --with-copies $(COPIES)
