@@ -12,3 +12,4 @@ Status 2026-11-14: built (verifier red first, then green). Check command: `env -
 - Finding for teleop: the gripper is asymmetric. The fixed jaw sits about 2 cm to one side of the gripper frame, so aiming the frame at the cube centre lands that jaw on top of the cube. The expert aims 1 cm off along the closing axis. A human aiming by eye hits the same problem; a tool-point offset in teleop is a candidate fix.
 - Mutation checks on the expert (copies in scratchpad, all exit 1): no jaw offset 54/100; lift only to 4 cm 0/100; gripper closes for 1 step instead of 15 16/100; gripper never closes 0/100.
 - Not done yet: writing expert episodes (needs the dataset module, ticket 07).
+Status: DONE (expert episodes are written through the dataset module since ticket 07).
