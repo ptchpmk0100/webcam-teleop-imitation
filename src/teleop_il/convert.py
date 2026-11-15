@@ -126,8 +126,10 @@ def build(sources, out) -> Path:
 
 
 def gate(data, required: float = 0.95, keep=None, workers: int = 1) -> int:
-    """Replay every demo in `data`; exit status 0 only if at least `required` of them lift. With `keep`, the demos
-    that replay are written to that NEW folder."""
+    """Replay every demo in `data`; exit status 0 only if at least `required` of the demos that did not push the cube
+    before the first close lift (Khoi, 2026-11-15: pushes are chaotic contacts, no replay can repeat them; such demos
+    are counted and listed but do not decide the gate), and at least one such demo exists. With `keep`, the demos that
+    replay are written to that NEW folder."""
     data = Path(data)
     ds = read_dataset(data)
     eps = ds.episodes
@@ -140,11 +142,11 @@ def gate(data, required: float = 0.95, keep=None, workers: int = 1) -> int:
     ok = np.array(ok, bool)
     pushed = np.array([pushed_before_grasp(e) for e in eps], bool)
     n, k = len(eps), int(ok.sum())
-    passed = k >= required * n
-    print(f"label gate: {k}/{n} demos replay to a lift through the controller (required {required:.0%}): "
-          f"{'PASS' if passed else 'FAIL'}")
-    print(f"  demos that did not push the cube before the first close: {int(ok[~pushed].sum())}/{int((~pushed).sum())}"
-          f"; demos that did: {int(ok[pushed].sum())}/{int(pushed.sum())}")
+    n_free, k_free = int((~pushed).sum()), int(ok[~pushed].sum())
+    passed = n_free > 0 and k_free >= required * n_free
+    print(f"label gate: {k_free}/{n_free} demos without a push before the first close replay to a lift through the "
+          f"controller (required {required:.0%}): {'PASS' if passed else 'FAIL'}")
+    print(f"  all demos: {k}/{n}; demos that pushed the cube (not judged): {int(ok[pushed].sum())}/{int(pushed.sum())}")
     failed = [f"{e.seed}{' (pushed)' if p else ''}" for e, good, p in zip(eps, ok, pushed) if not good]
     if failed:
         print("  failed seeds: " + ", ".join(failed))

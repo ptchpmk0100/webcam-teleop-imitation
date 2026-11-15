@@ -46,7 +46,8 @@ Critical path: 19, 20, 21, 22, 25. In parallel: 18 with 19 and 20; 24 with 21 an
 Kinds: AFK 18, 19, 20, 24. HITL 21, 22, 23, 25, 16, 17.
 
 ## Frozen thresholds v2 (change only through a short G3)
-- Label gate (19): replay of converted human demos lifts at least 95 of 100.
+- Label gate (19): replay of converted human demos lifts at least 95 of 100. Changed by Khoi 2026-11-15 (short G3):
+  at least 95 percent of the demos that did not push the cube before the first close.
 - Design gate (20): at least 90 of 100 on development seeds from 80 expert demos.
 - Held-out checkpoints: 21 at least 20 of 100; 22 at least 50 of 100. Target 50, stretch 80.
 - C++ parity v2 (24): same outcome on 100 of 100 held-out seeds.

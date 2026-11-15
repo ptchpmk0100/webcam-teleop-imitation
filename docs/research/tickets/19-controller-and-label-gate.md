@@ -2,10 +2,11 @@
 What to build: a controller that turns a gripper move into joint targets (damped least squares on the gripper site, soft point-down), and a conversion command that rebuilds the training set from the recorded sessions (the cleaning now done by a scratchpad script becomes part of it) with actions taken from the motion the arm achieved, plus the open/close command. Both candidate formats (move against the current gripper position; target relative to the cube) are replayed open loop; the one that lifts more demos is kept.
 Blocked by: None (can start immediately)
 Kind: AFK
-- [ ] Controller tests through forward kinematics: commanded move reached within tolerance, joint limits respected.
-- [ ] Gate command: replay of the converted 100 human demos lifts at least 95; exits non-zero below that.
-- [ ] The scripted expert's demos convert and replay at least 95 of 100 too.
-- [ ] Output is a new dataset folder with a manifest naming source, method and counts; inputs unchanged.
+- [x] Controller tests through forward kinematics: commanded move reached within tolerance, joint limits respected.
+- [x] Gate command: replay of the converted 100 human demos lifts at least 95; exits non-zero below that. (Changed by
+  Khoi 2026-11-15: at least 95 percent of the demos without a pre-grasp push; 77/77.)
+- [x] The scripted expert's demos convert and replay at least 95 of 100 too.
+- [x] Output is a new dataset folder with a manifest naming source, method and counts; inputs unchanged.
 
 ## Results 2026-11-15 (Opus 5.5)
 - Controller `GripperController`: damped least squares on the gripper site Jacobian from the measured joints, joints
@@ -29,3 +30,10 @@ Kind: AFK
   - `python -m teleop_il.convert gate runs/expert_data_20261114_235944`: 100/100, PASS (exit 0).
 - Open, Khoi (short G3): the 95/100 gate is not reachable with demos that pushed the cube. Proposed: the gate counts
   demos without a push (required 95 percent; now 77/77), and training uses the 93 demos that replay.
+
+## Closed 2026-11-15
+Khoi accepted the gate change ("yes for all"); training uses all 100 cleaned demos (ticket 21 decision).
+- Gate now judges the demos without a push before the first close, and fails if there are none (two new tests, red
+  first, then green; the "fails loudly" test now uses a failing demo with no push).
+- Verified: `python -m teleop_il.convert gate runs/v2_human_20261115`: 77/77 without a push, PASS (exit 0); all demos
+  93/100; pushed 16/23, not judged.

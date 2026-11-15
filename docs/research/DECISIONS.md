@@ -96,3 +96,11 @@ Evidence: ticket 12. Khoi does not accept 0/100. Grill rounds 1 and 2, all answe
 - **Headline (Q8):** both scores reported; the augmented one is the headline, the human-only one beside it.
 - **Stop rule (Q9):** under 50 of 100 after three correction rounds: stop and ask. Diffusion stays out of scope and needs a fresh ask.
 - **Model use:** planning was done on Fable 5.2; execution (ticket 18 onward) on Opus 5.5.
+
+## Execution answers (Khoi, 2026-11-15, "yes for all")
+- **Label gate (ticket 19):** judged on the demos that did not push the cube before the first close (at least 95
+  percent must replay; at least one such demo must exist). Demos that pushed are counted and listed, not judged. Reason:
+  a push is a chaotic contact that no replay repeats (10-16 of 23 replay, whatever the format). Now 77/77, PASS.
+- **Training set (ticket 21):** all 100 cleaned demos, not only the 93 that replay.
+- **Held-out checkpoint (ticket 21):** run now, before ticket 18's breakdown; training seeds 0, 1 and 2 are all scored
+  and all reported (none chosen). Then ticket 24, and ticket 18 reduced to the failure breakdown (v1 is retired).

@@ -41,12 +41,34 @@ def test_scripted_expert_demos_replay_to_a_lift_through_the_controller(expert_ep
     assert "3/3" in capsys.readouterr().out
 
 
+def still_cube(e):                 # the recorded cube never moved before a close, so no push is detected
+    return dataclasses.replace(e, cube_pose=np.repeat(e.cube_pose[:1], e.steps, axis=0))
+
+
 def test_the_gate_fails_loudly_when_a_demo_does_not_replay(expert_episodes, tmp_path, capsys):
-    data = write(tmp_path / "d", [*expert_episodes[:2], never_closes(expert_episodes[2])])
+    data = write(tmp_path / "d", [*expert_episodes[:2], still_cube(never_closes(expert_episodes[2]))])
     assert gate(data, required=0.95) == 1
     out = capsys.readouterr().out
     assert "2/3" in out and "FAIL" in out
     assert gate(data, required=0.6) == 0
+
+
+def pushed(e):
+    pose = e.cube_pose.copy()
+    pose[len(pose) // 2:, 0] += 0.01
+    return dataclasses.replace(e, cube_pose=pose)
+
+
+def test_the_gate_judges_only_demos_that_did_not_push_the_cube_before_the_grasp(expert_episodes, tmp_path, capsys):
+    data = write(tmp_path / "d", [*expert_episodes, pushed(never_closes(expert_episodes[0]))])
+    assert gate(data, required=0.95) == 0
+    out = capsys.readouterr().out
+    assert "3/3" in out and "PASS" in out
+
+
+def test_the_gate_fails_when_no_demo_is_free_of_a_push(expert_episodes, tmp_path):
+    data = write(tmp_path / "d", [pushed(expert_episodes[0])])
+    assert gate(data, required=0.0) == 1
 
 
 def test_the_gate_can_keep_only_the_demos_that_replay_in_a_new_folder(expert_episodes, tmp_path):

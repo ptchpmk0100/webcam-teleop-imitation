@@ -27,4 +27,12 @@ if(ONNXRUNTIME_DIR)
   target_link_libraries(policy_rollout PRIVATE ${MUJOCO_LIB} "${ONNXRUNTIME_DIR}/lib/libonnxruntime.so")
   set_target_properties(policy_rollout PROPERTIES BUILD_RPATH "${MUJOCO_DIR};${ONNXRUNTIME_DIR}/lib")
   target_compile_options(policy_rollout PRIVATE -Wall -Wextra -O2)
+
+  # State policy v2 (ticket 24): controller, chunk blending and ONNX contract v2. -ffp-contract=off keeps the
+  # arithmetic in the order written (no fused multiply-add), closer to Python's.
+  add_executable(policy_v2_rollout policy_v2_rollout.cc)
+  target_include_directories(policy_v2_rollout PRIVATE "${MUJOCO_DIR}/include" "${ONNXRUNTIME_DIR}/include")
+  target_link_libraries(policy_v2_rollout PRIVATE ${MUJOCO_LIB} "${ONNXRUNTIME_DIR}/lib/libonnxruntime.so")
+  set_target_properties(policy_v2_rollout PROPERTIES BUILD_RPATH "${MUJOCO_DIR};${ONNXRUNTIME_DIR}/lib")
+  target_compile_options(policy_v2_rollout PRIVATE -Wall -Wextra -O2 -ffp-contract=off)
 endif()
