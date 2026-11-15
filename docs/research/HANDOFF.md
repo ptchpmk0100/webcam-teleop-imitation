@@ -17,9 +17,9 @@ ticket files in `docs/research/tickets/` (each closed ticket ends with its evide
 | 12 Train + score state policy | closed, superseded | official 0/100; best variant (relative input + delta targets) 5/100 |
 | 14 C++ ONNX policy parity | done for contract v1 | v2 is ticket 24 |
 | 18 Diagnose current failures | **next, AFK** | development seeds 20000-20099, failure breakdown, hybrid scores |
-| 19 Controller + label gate | **next, AFK** | replay of converted demos must lift at least 95/100 |
-| 20 New design clones the expert | after 19, AFK | at least 90/100 on development seeds |
-| 21 Train on 100 human demos | after 18, 20, HITL | checkpoint 20/100 held-out |
+| 19 Controller + label gate | built; **gate 93/100 vs 95, Khoi decides** | all 7 failures pushed the cube before the grasp; no-push 77/77; expert 100/100 |
+| 20 New design clones the expert | **done** | 100/100 development seeds (v1: 59), chunk 20, 3 of 3 training seeds |
+| 21 Train on 100 human demos | dev seeds 79-97/100; **held-out run waits for Khoi** | policy alone; `runs/v2_human_20261115` (100) or `runs/v2_human_replayed_20261115` (93) |
 | 22 Transformed + recovery demos | after 21, HITL | checkpoint 50/100 held-out |
 | 23 Correction rounds | only if 22 misses, HITL | up to three rounds with Khoi |
 | 24 C++ controller + ONNX v2 | after 20, AFK | outcomes agree 100/100 |
