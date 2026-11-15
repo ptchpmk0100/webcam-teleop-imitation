@@ -35,3 +35,11 @@ as `Env.step` does. Test `test_replaying_the_recorded_joint_targets_reproduces_t
 that moves every frame; replay must match every row bit for bit) was red at row 1 before the fix. Suite 222 passed.
 Sessions started before this fix (try11, and try12 if it was already running) have the mismatch; they can be
 relabelled (ticket 12 notes).
+
+Done 2026-11-15. Sessions try12 (`runs/demos_20261115_104242`, 9 kept of 11) and try13 (`..._104619`, 53 kept of 58,
+baseline 56 of 58 lifted, median 6.9 s); both started before the second fix reached disk, both free of the stale
+toggle (0 auto-grasps, 0 stale rows). Both ran at 18-21 FPS (recording check FAIL) while lever experiments shared
+the CPU. Cleaning stage per session (scratchpad `clean_stage.py`: drop auto-grasp episodes, drop stale row 0,
+relabel by per-step inverse dynamics; residual median below 0.0005 rad, p99 0.07-0.09) into `runs/clean_*`, merged
+into `runs/demos_100`: valid, 100 episodes, 100 distinct seeds, 16075 steps (verified, dataset merge, exit 0).
+Split 80/20 by seed is made by `train_state`.

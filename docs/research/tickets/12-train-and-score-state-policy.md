@@ -17,3 +17,14 @@ seeds each; claim level: experiment, single training seed):
   within 2 cm), prev 0/50. First lifts from human data.
 - Reading: the label fix helps, but 38 demos of human approaches are far from enough; the expert reached 59/100
   with 80 exact demos. Next data point: 100 clean demos recorded with both fixes.
+
+100 clean demos, 2026-11-15 (`runs/demos_100`), all on the 100 held-out seeds:
+- Official command `train_state --data runs/demos_100` (80 train, 20 validation; 13 inputs, absolute targets):
+  0/100, CI 0.00-0.04, validation error 0.107 rad (verified, exit 0; `runs/state_policy_20261115_110826`).
+  Null checks PASS (verified, `python -m teleop_il.evaluation`, exit 0).
+- Lever variants (scratchpad `levers.py`, trained on all 100, one seed): base 0/100 (closest median 7.3 cm, 3 within
+  2 cm); rel+delta 5/100 (closest median 4.1 cm, 24 within 2 cm, 22 closed within 3 cm); rel+delta+w5 2/100
+  (3.4 cm, 31 within 2 cm, 21 closed). Relative input plus delta targets is the first change that moves the
+  approach; closing near the cube now happens in about a fifth of episodes but rarely becomes a lift.
+- Reference points: teleop baseline (human + assist) 97 percent; scripted expert 100/100; state policy on 80 expert
+  demos 59/100.
