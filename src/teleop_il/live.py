@@ -115,6 +115,7 @@ def run_session(camera, tracker, teleop, env, *, secs: float, clock, engaged, vi
     stages = {"read": [], "tracking": [], "teleop": [], "sim": []}
     frames = detected = 0
     sim_t = 0.0
+    held = None                                  # the teleop output applied during the current 20 Hz control step
     reached = False
     t0 = last_status = clock()
     if recorder is not None:
@@ -133,13 +134,15 @@ def run_session(camera, tracker, teleop, env, *, secs: float, clock, engaged, vi
             out = teleop.update(frame)
             d = clock()
             while sim_t + env.model.opt.timestep <= clock() - t0:     # physics in 5 ms slices: smooth motion, not 50 ms jumps
+                if env.at_control_boundary or held is None:          # a target holds for a whole 20 Hz step, as in
+                    held = out                                       # Env.step, so the recorded row replays exactly
                 if recorder is not None:
-                    recorder.row(env, out)
+                    recorder.row(env, held)
                 if viewer is not None:
                     with viewer.lock():
-                        env.substep(out.joint_targets)
+                        env.substep(held.joint_targets)
                 else:
-                    env.substep(out.joint_targets)
+                    env.substep(held.joint_targets)
                 sim_t += env.model.opt.timestep
             if viewer is not None:
                 viewer.sync()

@@ -26,3 +26,12 @@ Checkpoint 50, 2026-11-15 (session try11, `runs/demos_20261115_095943`: 26 of 27
   failure is the approach: the policy does not get the gripper within the grasp zone precisely enough.
 - Counting decision (Claude's recommendation): the 12 auto-grasp episodes stay on disk but are excluded from the
   headline dataset, so the clean count is 38; 62 more to reach 100.
+
+Second recording bug found and fixed, 2026-11-15: a camera frame changed the joint target in the middle of a 20 Hz
+control step while the recorded row kept the target from the step's start, so human demos did not replay (open-loop
+replay of 34 demos: 28 lifted, joints drifted up to 0.35 rad; one-step error median 0.013 rad, up to 0.1; the
+scripted expert's one-step error is 0.00000). Fix: `run_session` holds one teleop output for a whole control step,
+as `Env.step` does. Test `test_replaying_the_recorded_joint_targets_reproduces_the_recorded_motion_exactly` (a hand
+that moves every frame; replay must match every row bit for bit) was red at row 1 before the fix. Suite 222 passed.
+Sessions started before this fix (try11, and try12 if it was already running) have the mismatch; they can be
+relabelled (ticket 12 notes).

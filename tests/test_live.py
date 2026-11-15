@@ -477,6 +477,30 @@ def test_the_recorded_action_is_the_joint_target_sent_to_the_simulation(tmp_path
     assert np.allclose(env.data.qpos, e.qpos[1], atol=1e-3)    # lands where the recording says
 
 
+class MovingHandTracker(FakeTracker):
+    """A hand that drifts sideways every frame, so the teleop target changes between camera frames."""
+    def detect(self, image, timestamp_ms):
+        self.n += 1
+        img = [lm(0.3 + 0.004 * self.n + i / 100, 0.6 - i / 100, i / 1000) for i in range(21)]
+        world = [lm(i / 1000, -i / 1000, 2 * i / 1000) for i in range(21)]
+        return SimpleNamespace(hand_landmarks=[img], hand_world_landmarks=[world])
+
+
+def test_replaying_the_recorded_joint_targets_reproduces_the_recorded_motion_exactly(tmp_path):
+    """Checkpoint 50 (2026-11-15): replaying human demos open loop drifted up to 0.35 rad, because a camera frame
+    changed the target in the middle of a 20 Hz step while the row kept the target from its start. Behaviour cloning
+    needs the recorded action to be the one the simulation held for that whole step (as in Env.step)."""
+    from teleop_il.dataset import read_dataset
+    rec, _ = record_session(tmp_path, LiftedAfter(1.0), secs=1.3, tracker=MovingHandTracker())
+    (e,) = read_dataset(tmp_path / "demos").episodes
+    assert np.ptp(e.joint_targets[:, :5], axis=0).max() > 0.05          # the arm really moved
+    env = Env()
+    env.restore(e.initial_state)
+    for t, action in enumerate(e.joint_targets):
+        assert np.array_equal(env.data.qpos, e.qpos[t]), f"row {t}"
+        env.step(action)
+
+
 @pytest.mark.parametrize("second_seed", [619, 5])      # 619: cube 1.7 cm (sideways) from the start pose; 5: 11.4 cm
 def test_a_new_attempt_opens_the_gripper_before_its_first_recorded_step(tmp_path, second_seed):
     """try11 (2026-11-15): the G toggle was opened only by the window callback, one camera frame after the new cube
