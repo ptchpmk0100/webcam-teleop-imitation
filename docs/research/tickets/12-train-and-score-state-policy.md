@@ -28,3 +28,6 @@ seeds each; claim level: experiment, single training seed):
   approach; closing near the cube now happens in about a fifth of episodes but rarely becomes a lift.
 - Reference points: teleop baseline (human + assist) 97 percent; scripted expert 100/100; state policy on 80 expert
   demos 59/100.
+
+**Closed 2026-11-15 as "0/100, superseded".** Khoi does not accept 0/100. The policy design is replaced by PRD-v2;
+the work continues in tickets 18 to 25.

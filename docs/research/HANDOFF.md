@@ -5,49 +5,36 @@ ticket files in `docs/research/tickets/` (each closed ticket ends with its evide
 
 ## Where things stand
 - Branch `integration`, pushed to github.com/ptchpmk0100/webcam-teleop-imitation (private). Not merged to `main`.
-- `make test`: 219 passed. Expert check `python -m teleop_il.expert`: 100/100. Null checks: PASS.
-- **Progress: 12 of 17 tickets done (71 percent by count; about 65 percent by effort**, because the two remaining
-  training tickets carry the main risk: the policy alone must learn the grasp from human demos).
+- `make test`: 222 passed (run with `env -u PYTHONPATH`). Expert check: 100/100. Null checks: PASS.
+- **The policy was re-planned on 2026-11-15** after 0/100 on 100 clean demos. Read `PRD-v2.md`, the "Policy
+  re-plan" entry in DECISIONS.md and "Board v2" in `tickets/00-board.md`. Tickets 18 to 25 are the new journey.
+- Planning was done on Fable 5.2. **Execution (ticket 18 onward) runs on Opus 5.5.**
 
 | Ticket | Status | Key result |
 |---|---|---|
-| 01 Env tracer | done | success read from MuJoCo state (cube bottom above 5 cm for 1 s) |
-| 02 Eval harness | done | 100 held-out seeds (10000-10099), Wilson CI, null checks 0/100 |
-| 03 Teleop core | done | relative mapping, One-Euro filter, IK with mink |
-| 04 Live webcam demo | done (G5) | redesigned teleop: hand = left-right/up-down, W/S = forward-back, G = gripper, grasp assist; trial 6/10 |
-| 05 Week-1 video + scale check | **open, Khoi** | 60 s screen recording; ruler scale check (left-right, up-down) |
-| 06 Scripted expert | done | 100/100 held-out |
-| 07 Dataset module | done | npz per episode, versioned manifest, split by cube seed, merge and check commands |
-| 08 Replay + image render | done | images from stored states, 96 x 128 policy camera |
-| 09 State policy code | done | MLP, 10-step action chunks, ONNX; 80 expert demos give 59/100 |
-| 10 First 25 demos | done (G5) | `runs/demos_25`: 25 valid; baseline 30/30 lifted, median 8.0 s |
-| 11 Record to 100 | done | `runs/demos_100`: 100 clean (112 recorded, cleaned and relabelled) |
-| 12 Train + score state policy | **G5, Khoi decides** | official 0/100; best variant (relative input + delta targets) 5/100 |
-| 13 C++ physics parity | done | bit-identical to Python on 130 sequences |
-| 14 C++ ONNX policy parity | done | C++ = PyTorch within 6e-7, 100/100 outcomes agree, C++ null checks 0/100 |
-| 15 Image policy code | done | CNN + spatial softmax, ONNX, `train_image` command |
-| 16 Train + score image policy | waiting for 11 | needs Colab or Kaggle (CPU is about 10 s per epoch per 20 episodes) |
-| 17 CI, README, release | waiting for 05, 12 | making the repo public needs a separate ask |
+| 01-04, 06-11, 13, 15 | done | teleop, dataset, expert 100/100, 100 clean demos in `runs/demos_100`, C++ physics parity |
+| 05 Week-1 video + scale check | **open, Khoi** | 60 s screen recording in a practice session (`make demo`); ruler check |
+| 12 Train + score state policy | closed, superseded | official 0/100; best variant (relative input + delta targets) 5/100 |
+| 14 C++ ONNX policy parity | done for contract v1 | v2 is ticket 24 |
+| 18 Diagnose current failures | **next, AFK** | development seeds 20000-20099, failure breakdown, hybrid scores |
+| 19 Controller + label gate | **next, AFK** | replay of converted demos must lift at least 95/100 |
+| 20 New design clones the expert | after 19, AFK | at least 90/100 on development seeds |
+| 21 Train on 100 human demos | after 18, 20, HITL | checkpoint 20/100 held-out |
+| 22 Transformed + recovery demos | after 21, HITL | checkpoint 50/100 held-out |
+| 23 Correction rounds | only if 22 misses, HITL | up to three rounds with Khoi |
+| 24 C++ controller + ONNX v2 | after 20, AFK | outcomes agree 100/100 |
+| 25 Final scores | after 22/23, 24, HITL | both numbers, three training seeds |
+| 16 Image policy | after 25 | needs Colab or Kaggle |
+| 17 CI, README, release | after 05, 25 | making the repo public needs a separate ask |
 
 ## Next steps
-Khoi:
-1. Record demos (ticket 11), one session at a time; the log number goes up each time:
-   `make demo ARGS="--record --log runs/try12.npz"` (try13, ... after). Each session gets a new folder
-   `runs/demos_<time>/` and continues after the highest seed recorded so far (next: 655). Do not screen-record during
-   a record session (try11 dropped to 19.6 FPS); record the video in a practice session (`make demo`). Tips that worked: W/S for cubes far forward or back; after the
-   assist hands back the gripper stays closed, raise the hand until the panel shows the 1 s hold; keep the hand in the
-   lamp light (5 of 30 attempts were discarded for losing the hand more than 0.3 s).
-2. Ticket 05 when convenient: Ctrl+Alt+Shift+R records the screen; ruler check with `--log`.
+Claude (on Opus 5.5): start tickets 18 and 19 (no blockers, can run in parallel). Held-out seeds 10000-10099 are
+scored only at the checkpoints in 21, 22, 23 and 25; everything else uses development seeds.
+Khoi: ticket 05 when convenient (never screen-record during a record session). No recording is needed unless
+ticket 23 is reached.
 
-Claude, when Khoi reports:
-1. At 50 kept demos: merge all sessions into a new folder
-   (`uv run python -m teleop_il.dataset merge runs/demos_50 runs/demos_2026...`; never include `runs/demos_25`, it
-   is itself a merge), train (`uv run python -m teleop_il.train_state --data runs/demos_50`), report the policy-alone
-   score and what it does on failures (approach distance, gripper closing, lift).
-2. At 100: same as ticket 12, plus the secondary "policy with assist" number (decided: reported, labelled, not the
-   headline). If the policy still does not close the gripper, candidates for ticket 12: weight the grasp segment in
-   the loss, add the gripper's commanded state or a phase cue to the observation, more epochs, DART-style noise.
-3. Ticket 16 needs a Colab or Kaggle bundle (Khoi runs it by hand; no tokens to Claude).
+Experiment scripts from the 0/100 investigation (cleaning, relabelling, lever screen, failure probe) are copied to
+`runs/scratch_scripts_20261115/` (local, not committed). Ticket 19 turns the cleaning into a repo command.
 
 ## Decisions to keep in force (details in DECISIONS.md)
 - Headline score: the policy alone (no assist, no human). Policy with assist only as a labelled secondary number.
@@ -61,7 +48,8 @@ Claude, when Khoi reports:
 - Human demos: `runs/demos_20261115_004601` (9), `..._005408` (4), `..._005620` (9), `..._010151` (3), merged in
   `runs/demos_25`. `..._004332` and `..._011905` are empty sessions (0 kept). Session logs `runs/try1.npz`-`try10.npz`.
   **Back up `runs/` (for example to a USB drive or cloud folder): losing it loses the demos.**
-- Policies: `runs/state_policy_20261114_235944` (expert, 59/100), `runs/state_policy_20261115_010232` (25 human, 0/100).
+- Policies: `runs/state_policy_20261114_235944` (expert, 59/100), `runs/state_policy_20261115_110826` (100 human, 0/100).
+- Sessions `runs/demos_20261115_095943` (25), `..._104242` (9), `..._104619` (53); cleaned per session in `runs/clean_20261115_*`; merged in **`runs/demos_100`** (100 episodes, the training source).
 - Assets fetched by `make setup` into `assets/` (menagerie, hand model, ONNX Runtime 1.32.0, all pinned).
 
 ## Commands

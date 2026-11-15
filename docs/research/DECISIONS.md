@@ -80,3 +80,19 @@ Evidence: sessions `runs/try1-3.npz` (local, not committed). Tracking is fine (9
 - **Outcome (G5, 2026-11-14):** both prototypes lifted 0; the fallback (hand for left-right and up-down, W/S for forward-back, G for the gripper, grasp assist) passed the bar on its first counted trial, 6 of 10 (verified from logged cube height), and Khoi accepted it. The assist zone is 5 cm, not 3 (the prototypes' nearest close was 3.2 cm), and it fires whenever the gripper is closed inside the zone, once per close.
 - **After 25 demos (G5, 2026-11-15):** ticket 10 accepted; ticket 11 (to 100 demos) agreed. Khoi's challenge: a robot that follows the hand and lets a scripted grasp finish is not a real-world design; if that were the goal, re-plan. Answer: it is not the goal. The product is an autonomous policy (state, later image) that does the whole pick-and-lift alone; teleop is only the data-collection tool and the assist a crutch for it. Proposed: try a no-assist trial now that W/S and the window work; if Khoi lifts at least 5 of 10 without it, record the remaining demos without the assist (source "human"). Scoring: Khoi chose (b) "policy with the assist"; flagged to him that this puts the scripted grasp inside the deployed controller, the very thing he objects to, so (a) "policy alone" is recommended as the headline with (b) as a secondary number. Waiting for his confirmation.
 - **Confirmed (Khoi, 2026-11-15):** the headline score is (a) the policy alone, with no assist and no human; (b) policy with the assist is reported only as a labelled secondary number. The assist stays for collecting demos (the end goal is without it anyway); the no-assist trial is skipped.
+
+## Policy re-plan (2026-11-15, after 0/100 on 100 clean demos; supersedes the policy decisions above where they differ)
+Evidence: ticket 12. Khoi does not accept 0/100. Grill rounds 1 and 2, all answered "yes". Details: PRD-v2.md.
+- **Target (Q1):** policy alone at least 50 of 100 held-out seeds, stretch 80, with confidence interval.
+- **Action and observation (Q2):** gripper moves plus an open/close output, observation relative to the cube's grasp point, and a small controller identical in Python and C++. Replaces "absolute joint targets".
+- **Labels:** the motion the arm achieved, not the recorded teleop target. Gate: replay at least 95 of 100 before training.
+- **Execution:** whole chunks with blending (ACT-style). "ACT is a stretch goal" now applies only to the transformer network; the MLP stays the default.
+- **Design gate:** clone the scripted expert at 90 of 100 or better before training on human demos.
+- **Transformed demos (Q3):** Khoi's 100 demos moved to new cube positions, simulator-verified, plus recovery data; disclosed as "100 human demos plus N transformed copies".
+- **Corrections (Q4):** up to three rounds of about 10 minutes, only if the transformed-demo stage misses 50 of 100.
+- **Disclosure (Q5):** the README states that the grasp segment of each demo is the assist's motion. No recording without the assist.
+- **Tickets (Q6):** 12 closed as superseded; new tickets 18 to 25; 16 and 17 re-blocked on 25.
+- **Seeds (Q7):** development seeds 20000-20099 for experiments; held-out seeds only at named checkpoints. About 20 variants had already been scored on the held-out seeds before this rule.
+- **Headline (Q8):** both scores reported; the augmented one is the headline, the human-only one beside it.
+- **Stop rule (Q9):** under 50 of 100 after three correction rounds: stop and ask. Diffusion stays out of scope and needs a fresh ask.
+- **Model use:** planning was done on Fable 5.2; execution (ticket 18 onward) on Opus 5.5.

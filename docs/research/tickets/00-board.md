@@ -28,3 +28,29 @@ Critical path to the week-1 video: 01, 03, 04, 05. In parallel after 01: 02, 03,
 ## Run budget
 - AFK ticket: at most 3 failed verifier cycles, then park it and report. One ticket per fresh context. Usage gauge is unknown (autopilot ticket 02), so G9 is not enforced.
 - No paid compute. No Colab, Kaggle, public repo or issue creation without a fresh ask.
+
+# Board v2 (journey for PRD-v2.md), 2026-11-15
+
+Done and unchanged: 01-11, 13, 15. Open with Khoi: 05. Closed as superseded: 12. Done for contract v1 only: 14.
+
+## Graph (blocked by)
+(none) -> 18, 19
+19 -> 20
+18 + 20 -> 21 -> 22 -> 23 (only if 22 misses 50 of 100)
+20 -> 24
+22 (or 23) + 24 -> 25
+25 -> 16
+05 + 25 -> 17
+
+Critical path: 19, 20, 21, 22, 25. In parallel: 18 with 19 and 20; 24 with 21 and 22.
+Kinds: AFK 18, 19, 20, 24. HITL 21, 22, 23, 25, 16, 17.
+
+## Frozen thresholds v2 (change only through a short G3)
+- Label gate (19): replay of converted human demos lifts at least 95 of 100.
+- Design gate (20): at least 90 of 100 on development seeds from 80 expert demos.
+- Held-out checkpoints: 21 at least 20 of 100; 22 at least 50 of 100. Target 50, stretch 80.
+- C++ parity v2 (24): same outcome on 100 of 100 held-out seeds.
+- Seeds: demos and copies below 10000; held-out 10000-10099 only at checkpoints (21, 22, 23, 25); development
+  20000-20099 for everything else.
+- Stop rule: under 50 of 100 after three correction rounds: stop and ask.
+- Run budget and standing rules as in the first board.
