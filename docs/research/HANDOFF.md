@@ -4,7 +4,7 @@ Read this first when resuming. Then `docs/research/DECISIONS.md` (all decisions,
 ticket files in `docs/research/tickets/` (each closed ticket ends with its evidence).
 
 ## Where things stand
-- Branch `integration`, pushed to github.com/ptchpmk0100/webcam-teleop-imitation (private). Not merged to `main`.
+- Branch `integration`, pushed to github.com/ptchpmk0100/webcam-teleop-imitation (private), CI green. Not merged to `main`.
 - `make test` (run with `env -u PYTHONPATH`): see the latest commit message for the count. Expert check: 100/100.
   Null checks: PASS.
 - **The policy was re-planned on 2026-11-15** after 0/100 on 100 clean demos. Read `PRD-v2.md`, the "Policy
@@ -31,11 +31,13 @@ ticket files in `docs/research/tickets/` (each closed ticket ends with its evide
 | 24 C++ controller + ONNX v2 | **done** | `make policy-v2-parity RUN=...`: outcomes agree 100/100, controller gap 7e-15 |
 | 25 Final scores | **built and run; Khoi approves the numbers** | `make final-scores`: human only 96/90/84, with copies 100/100/100, C++ equal on every seed; with assist 96/87/89 and 100/100/100 |
 | 16 Image policy | after 25 | needs Colab or Kaggle |
-| 17 CI, README, release | after 05, 25 | making the repo public needs a separate ask |
+| 17 CI, README, release | **CI green, README written**; open: video (Khoi), 05, public release | `.github/workflows/tests.yml`, run 43754820435: 279 passed; making the repo public needs a separate ask |
 
 ## Next steps
 Ticket 25: the table is in `tickets/25-final-scores.md` (from `make final-scores`, `runs/final_scores_20261115_200602`).
-Open: Khoi approves the numbers. Then 17 (CI, README, release; needs 05) and 16 (image policy, Colab or Kaggle).
+Open: Khoi approves the numbers. 17: CI is green and the README is written; left are Khoi's video (README
+placeholder), ticket 05 and the separate ask to make the repo public. 16 (image policy): not started; needs the v2
+design ported to images and Colab or Kaggle (local GPU: GTX 1650, 4 GB).
 Held-out seeds 10000-10099 are scored only at the checkpoints in 21, 22, 23 and 25; everything else uses
 development seeds.
 Khoi: ticket 05 when convenient (never screen-record during a record session). The demonstration video is Khoi's own screen recording
