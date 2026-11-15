@@ -106,7 +106,7 @@ class Attempts:
 
 def run_session(camera, tracker, teleop, env, *, secs: float, clock, engaged, viewer=None, preview=None,
                 status=None, close_gripper=lambda: False, forward=lambda: 0.0, attempts=None, last_key=lambda: "",
-                log=None, recorder=None) -> SessionStats:
+                log=None, recorder=None, on_new_attempt=lambda: None) -> SessionStats:
     """Run the live loop for `secs` seconds of `clock` time; the simulation advances in real time at 20 Hz.
 
     With `attempts`, each attempt ends on a lift (judged by `env.success()`) or its time limit, and the next seed is
@@ -169,6 +169,7 @@ def run_session(camera, tracker, teleop, env, *, secs: float, clock, engaged, vi
                 if new_attempt:
                     env.reset(attempts.seed)
                     teleop.reset()
+                    on_new_attempt()                               # before the next frame (try11: one stale frame)
                     sim_t = clock() - t0                           # the new attempt's physics starts now
                     if recorder is not None:
                         recorder.start(env, attempts.seed)         # a restart drops the unfinished recording
@@ -472,6 +473,7 @@ def main(argv=None) -> int:
                             engaged=lambda: state["engaged"], preview=preview, status=status,
                             close_gripper=lambda: state["key_closed"], forward=lambda: state["forward"],
                             last_key=lambda: state.pop("key_event", ""),
+                            on_new_attempt=lambda: state.update(key_closed=False),
                             attempts=attempts, log=log, recorder=recorder)
     finally:
         tracker.close()

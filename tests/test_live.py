@@ -477,6 +477,34 @@ def test_the_recorded_action_is_the_joint_target_sent_to_the_simulation(tmp_path
     assert np.allclose(env.data.qpos, e.qpos[1], atol=1e-3)    # lands where the recording says
 
 
+@pytest.mark.parametrize("second_seed", [619, 5])      # 619: cube 1.7 cm (sideways) from the start pose; 5: 11.4 cm
+def test_a_new_attempt_opens_the_gripper_before_its_first_recorded_step(tmp_path, second_seed):
+    """try11 (2026-11-15): the G toggle was opened only by the window callback, one camera frame after the new cube
+    was loaded. That frame still sent "closed": 34 of 50 demos began with a closed-gripper label, and in 12 the cube
+    lay within 5 cm of the start pose, so the assist grasped it before the human moved."""
+    from teleop_il.assist import AssistedTeleop
+    from teleop_il.dataset import read_dataset
+    from teleop_il.live import Attempts
+    from teleop_il.recorder import EpisodeRecorder
+
+    class LiftedEachHalfSecond(Env):
+        def success(self): return self.data.time > 0.5
+    clock = FakeClock()
+    env = LiftedEachHalfSecond()
+    attempts = Attempts(seeds=(3, second_seed), limit_s=30.0)
+    env.reset(attempts.seed)
+    state = {"key_closed": True}                           # attempt 1 ends holding the cube, the toggle shows closed
+    rec = EpisodeRecorder(tmp_path / "demos", source="human+assist")
+    teleop = AssistedTeleop(Teleop(), ee=env.ee_position, cube=env.cube_position)
+    run_session(FakeCamera(clock), FakeTracker(), teleop, env, secs=1.2, clock=clock, engaged=lambda: True,
+                close_gripper=lambda: state["key_closed"], on_new_attempt=lambda: state.update(key_closed=False),
+                attempts=attempts, recorder=rec)
+    rec.close()
+    second = read_dataset(tmp_path / "demos").episodes[1]
+    assert second.seed == second_seed
+    assert second.joint_targets[0, 5] > 1.0 and not second.assist_active.any()
+
+
 def test_a_new_record_session_continues_after_the_highest_seed_already_recorded(tmp_path):
     import json
     from teleop_il.live import next_demo_seed

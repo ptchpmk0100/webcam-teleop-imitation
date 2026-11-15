@@ -5,3 +5,24 @@ Kind: HITL
 - [ ] 100 valid episodes pass dataset validation; the split by episode is created.
 
 Progress 2026-11-15: 25 of 100 (`runs/demos_25`, ticket 10). Next session starts at seed 628. Checkpoint at 50: merge, train the state policy, report the policy-alone score.
+
+Checkpoint 50, 2026-11-15 (session try11, `runs/demos_20261115_095943`: 26 of 27 lifted, 25 kept, median 7.0 s;
+19.6 FPS, below the 25 FPS recording check, because a screen recording ran at the same time).
+- Merged: `runs/demos_50` = the four ticket-10 sessions plus try11; valid, 50 episodes, 50 distinct seeds
+  (verified, `python -m teleop_il.dataset merge ...`, exit 0).
+- State policy on it (`train_state --data runs/demos_50`, 40 train / 10 validation): 0/100 held-out, CI 0.00-0.04
+  (verified, exit 0; `runs/state_policy_20261115_100425`). Failure probe on 20 held-out seeds: closest approach to
+  the grasp point median 5.5 cm (3 of 20 within 2 cm), gripper close commanded in 6 of 20, never within 3 cm of the
+  grasp point; the cube rose more than 1 cm once. The 25-demo policy: median 4.1 cm, 8 of 20 closes, same picture.
+- Recording bug found and fixed: at a new attempt the G toggle was opened by the window callback one camera frame
+  after the new cube was loaded, so that frame still sent "closed". Effect: 34 of 50 episodes have a closed-gripper
+  label on row 0 (row 1 is open in all 50), and in 12 the new cube lay within 5 cm (sideways) of the start pose, so
+  the assist fired at row 0 and grasped with no human approach (the 3 s lifts). Fix: `run_session` calls
+  `on_new_attempt` right after the reset, before the next frame; test
+  `test_a_new_attempt_opens_the_gripper_before_its_first_recorded_step` (near and far cube), mutant without the call
+  fails both cases. Suite 221 passed.
+- Does the bug explain the 0/100? No: trained on all 50, on the 38 without auto-grasp, and on those 38 without row
+  0, each scores 0/100 on the 100 held-out seeds (in-memory experiment, scratchpad `clean_experiment.py`). The
+  failure is the approach: the policy does not get the gripper within the grasp zone precisely enough.
+- Counting decision (Claude's recommendation): the 12 auto-grasp episodes stay on disk but are excluded from the
+  headline dataset, so the clean count is 38; 62 more to reach 100.

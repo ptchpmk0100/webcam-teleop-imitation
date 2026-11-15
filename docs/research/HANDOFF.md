@@ -21,8 +21,8 @@ ticket files in `docs/research/tickets/` (each closed ticket ends with its evide
 | 08 Replay + image render | done | images from stored states, 96 x 128 policy camera |
 | 09 State policy code | done | MLP, 10-step action chunks, ONNX; 80 expert demos give 59/100 |
 | 10 First 25 demos | done (G5) | `runs/demos_25`: 25 valid; baseline 30/30 lifted, median 8.0 s |
-| 11 Record to 100 | **in progress, Khoi** | 25 of 100; checkpoint at 50 |
-| 12 Train + score state policy | waiting for 11 | 25-demo checkpoint: 0/100 (approaches, rarely closes) |
+| 11 Record to 100 | **in progress, Khoi** | 50 recorded, 38 clean (12 auto-grasped by a fixed bug); 62 to go |
+| 12 Train + score state policy | waiting for 11 | 50-demo checkpoint: 0/100 (approach median 5.5 cm off, rarely closes) |
 | 13 C++ physics parity | done | bit-identical to Python on 130 sequences |
 | 14 C++ ONNX policy parity | done | C++ = PyTorch within 6e-7, 100/100 outcomes agree, C++ null checks 0/100 |
 | 15 Image policy code | done | CNN + spatial softmax, ONNX, `train_image` command |
@@ -32,8 +32,9 @@ ticket files in `docs/research/tickets/` (each closed ticket ends with its evide
 ## Next steps
 Khoi:
 1. Record demos (ticket 11), one session at a time; the log number goes up each time:
-   `make demo ARGS="--record --log runs/try11.npz"`. Each session gets a new folder `runs/demos_<time>/` and continues
-   after the highest seed recorded so far (next: 628). Tips that worked: W/S for cubes far forward or back; after the
+   `make demo ARGS="--record --log runs/try12.npz"` (try13, ... after). Each session gets a new folder
+   `runs/demos_<time>/` and continues after the highest seed recorded so far (next: 654). Do not screen-record during
+   a record session (try11 dropped to 19.6 FPS); record the video in a practice session (`make demo`). Tips that worked: W/S for cubes far forward or back; after the
    assist hands back the gripper stays closed, raise the hand until the panel shows the 1 s hold; keep the hand in the
    lamp light (5 of 30 attempts were discarded for losing the hand more than 0.3 s).
 2. Ticket 05 when convenient: Ctrl+Alt+Shift+R records the screen; ruler check with `--log`.
