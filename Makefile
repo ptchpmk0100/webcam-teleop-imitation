@@ -1,4 +1,4 @@
-.PHONY: setup test demo trial diagnose parity policy-parity policy-v2-parity
+.PHONY: setup test demo trial diagnose parity policy-parity policy-v2-parity policy-demo
 setup:
 	uv sync
 	./scripts/fetch_assets.sh
@@ -23,3 +23,6 @@ policy-parity: setup
 
 policy-v2-parity: setup
 	env -u PYTHONPATH uv run python -m teleop_il.cpp_policy_v2_parity $(RUN)
+
+policy-demo: setup
+	env -u PYTHONPATH uv run python -m teleop_il.policy_demo $(RUN) $(ARGS)

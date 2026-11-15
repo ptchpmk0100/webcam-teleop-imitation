@@ -55,3 +55,6 @@ Kinds: AFK 18, 19, 20, 24. HITL 21, 22, 23, 25, 16, 17.
   20000-20099 for everything else.
 - Stop rule: under 50 of 100 after three correction rounds: stop and ask.
 - Run budget and standing rules as in the first board.
+
+## Status 2026-11-15 (evening)
+Done: 18, 19, 20, 21, 22 (transformed copies only; recovery mode dropped), 24. Not needed: 23. Next: 25.

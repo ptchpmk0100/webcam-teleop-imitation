@@ -104,3 +104,13 @@ Evidence: ticket 12. Khoi does not accept 0/100. Grill rounds 1 and 2, all answe
 - **Training set (ticket 21):** all 100 cleaned demos, not only the 93 that replay.
 - **Held-out checkpoint (ticket 21):** run now, before ticket 18's breakdown; training seeds 0, 1 and 2 are all scored
   and all reported (none chosen). Then ticket 24, and ticket 18 reduced to the failure breakdown (v1 is retired).
+
+## Ticket 22 scope and result (Khoi, 2026-11-15)
+- **Scope:** Khoi: "choose the best option", Claude does all the work, no Codex. Chosen: transformed copies only; the
+  recovery mode is dropped (PRD-v2 story 13 not built), because the copies alone reach the result below.
+- **Result:** 100 human demos plus copies (80 + 626 in training): held-out 100, 100, 100 of 100 (training seeds 0-2),
+  against 96, 90, 84 from the human demos alone. Ticket 23 (correction rounds) is not needed.
+- **Model use, exception:** Khoi allowed this ticket's execution on Fable 5.2 (spare usage); the rule (Fable for
+  planning, Opus 5.5 for execution) stays.
+- **Demonstration video:** the real one is Khoi's own screen recording of the live window
+  (`make policy-demo RUN=...`); rendered mp4 files are placeholders only.
