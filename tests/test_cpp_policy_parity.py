@@ -21,11 +21,16 @@ def exe(tmp_path_factory):
 @pytest.fixture(scope="module")
 def trained(tmp_path_factory):
     env = Env()
-    # 60 episodes: with 20 the policy lifted none of SEEDS, and the comparison must include lifts (seeded, so stable)
+    # 60 episodes: with 20 the policy lifted none of SEEDS, and the comparison must include lifts. Training is seeded
+    # but not bit-identical across CPUs (on the CI machine training seed 0 lifted none), so take the first training
+    # seed whose policy lifts at least one of SEEDS; which policy is compared does not matter for parity.
     episodes = [record_episode(env, ExpertPolicy(), seed=s, source="expert") for s in range(60)]
-    result = train(episodes, epochs=150, seed=0)
-    path = tmp_path_factory.mktemp("onnx") / "policy.onnx"
-    export_onnx(result.model, path)
+    for i, training_seed in enumerate(range(4)):
+        result = train(episodes, epochs=150, seed=training_seed)
+        path = tmp_path_factory.mktemp(f"onnx{i}") / "policy.onnx"
+        export_onnx(result.model, path)
+        if any(o.success for o in python_policy_rollout(OnnxPolicy(path), SEEDS)):
+            break
     return result.model, path, np.vstack([episode_observations(e) for e in episodes[:3]])
 
 
