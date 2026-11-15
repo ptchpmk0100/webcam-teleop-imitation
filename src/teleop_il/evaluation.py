@@ -7,6 +7,9 @@ from dataclasses import dataclass
 import numpy as np
 
 HELD_OUT_SEEDS: tuple[int, ...] = tuple(range(10_000, 10_100))   # 100 fixed seeds; demos and training use seeds below 10000
+# PRD-v2: every experiment and every choice between variants is scored here; the held-out seeds only at the named
+# checkpoints (tickets 21, 22, 23, 25), so choosing the best variant does not flatter the headline number.
+DEV_SEEDS: tuple[int, ...] = tuple(range(20_000, 20_100))
 MAX_STEPS = 300                                                   # 15 s at 20 Hz
 NULL_HOLD_MAX_SUCCESSES = 0                                       # do-nothing must score 0 of 100
 NULL_RANDOM_MAX_SUCCESSES = 2                                     # random actions at most 2 of 100

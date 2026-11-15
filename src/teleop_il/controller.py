@@ -57,6 +57,10 @@ class GripperController:
         mujoco.mj_comPos(self._model, d)
         return d.site_xpos[self._site].copy()
 
+    def gripper_position(self, joints) -> np.ndarray:
+        """Where the gripper frame is with the arm at `joints` (forward kinematics; at least the 5 arm joints)."""
+        return self._kinematics(np.asarray(joints, dtype=float)[:5])
+
     def target_rotation(self, target) -> np.ndarray:
         """Pointing straight down, turned about the vertical by the target's bearing from the base (as the pan
         joint turns the arm)."""
