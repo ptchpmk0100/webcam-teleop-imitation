@@ -38,8 +38,9 @@ What the numbers do and do not say:
 
 ## Video
 
-Placeholder: the demonstration video (a screen recording of `make policy-demo`, the policy alone in the live window)
-is not added yet.
+A 66 s screen recording of `make policy-demo RUN=runs/v2_policy_20261115_185843` (the policy alone in the live window,
+no hand, no webcam, no assist) was recorded on 2026-11-15. The mp4 is not committed (`*.mp4` is gitignored); it
+will be attached when the repo is released.
 
 ## How it works
 

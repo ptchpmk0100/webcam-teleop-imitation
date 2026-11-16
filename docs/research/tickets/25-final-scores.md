@@ -32,4 +32,4 @@ with grasp assist 30 of 30, median 8.0 s (ticket 10); 56 of 58, median 6.9 s (ti
 The assist does not help the human-only policies (87-96 against 84-96): their failures are mostly in the approach
 (ticket 18: "never near"), which the assist does not touch.
 - [x] Every number printed by one command, with interval and null checks.
-- [ ] Khoi approves the numbers.
+- [x] Khoi approves the numbers (2026-11-16).
