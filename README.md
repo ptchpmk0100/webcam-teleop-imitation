@@ -56,9 +56,10 @@ image policy, and it is not in `make final-scores`.
 
 ## Video
 
-A 66 s screen recording of `make policy-demo RUN=runs/v2_policy_20261115_185843` (the policy alone in the live window,
-no hand, no webcam, no assist) was recorded on 2026-11-15. The mp4 is not committed (`*.mp4` is gitignored); it
-will be attached when the repo is released.
+[docs/media/policy-demo.mp4](docs/media/policy-demo.mp4): a 66 s screen recording of
+`make policy-demo RUN=runs/v2_policy_20261115_185843` (the state policy, trained on the human demos plus copies,
+policy alone in the live window: no hand, no webcam, no assist). It plays ten development cube positions and the
+overlay counts the lifts (9 of 10 in this recording; the held-out score is the table above).
 
 ## How it works
 

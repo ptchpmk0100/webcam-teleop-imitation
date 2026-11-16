@@ -19,7 +19,7 @@ ticket files in `docs/research/tickets/` (each closed ticket ends with its evide
 | Ticket | Status | Key result |
 |---|---|---|
 | 01-04, 06-11, 13, 15 | done | teleop, dataset, expert 100/100, 100 clean demos in `runs/demos_100`, C++ physics parity |
-| 05 Week-1 video + scale check | **open, Khoi** | 60 s screen recording in a practice session (`make demo`); ruler check |
+| 05 Week-1 video + scale check | **closed by Khoi's approval 2026-11-16** | ruler logs `runs/try14.npz`, `try15.npz`: gain matches design within noise, no cm figure (see ticket 05); live-teleop clip optional |
 | 12 Train + score state policy | closed, superseded | official 0/100; best variant (relative input + delta targets) 5/100 |
 | 14 C++ ONNX policy parity | done for contract v1 | v2 is ticket 24 |
 | 18 Diagnose failures | **done (slimmed)** | `python -m teleop_il.breakdown RUN [--held-out]`; largest class on held-out: never near (11 of 30) |
@@ -29,15 +29,16 @@ ticket files in `docs/research/tickets/` (each closed ticket ends with its evide
 | 22 Transformed copies | **done** (recovery mode dropped) | held-out, policy alone: 100, 100, 100 (seeds 0-2); 798 copies in `runs/v2_copies_20261115` |
 | 23 Correction rounds | not needed | 22 passed its checkpoint |
 | 24 C++ controller + ONNX v2 | **done** | `make policy-v2-parity RUN=...`: outcomes agree 100/100, controller gap 7e-15 |
-| 25 Final scores | **built and run; Khoi approves the numbers** | `make final-scores`: human only 96/90/84, with copies 100/100/100, C++ equal on every seed; with assist 96/87/89 and 100/100/100 |
-| 16 Image policy | after 25 | needs Colab or Kaggle |
-| 17 CI, README, release | **CI green, README written**; open: video (Khoi), 05, public release | `.github/workflows/tests.yml`, run 43754820435: 279 passed; making the repo public needs a separate ask |
+| 25 Final scores | **done; Khoi approved 2026-11-16** | `make final-scores`: human only 96/90/84, with copies 100/100/100, C++ equal on every seed; with assist 96/87/89 and 100/100/100 |
+| 16 Image policy | **done 2026-11-16** | image + joints, no cube pose; Kaggle T4 40 epochs; policy alone 97/100 held-out and 97/100 development (CI 0.92-0.99), seed 0 only; `python -m teleop_il.train_image_v2 score runs/image_v2_policy_kaggle_20261116 [--held-out]` |
+| 17 CI, README, release | **CI green, README and video (`docs/media/policy-demo.mp4`) committed**; open: public release (Khoi asks later) | `.github/workflows/tests.yml`, run 43754820435: 279 passed; making the repo public needs a separate ask |
 
 ## Next steps
 Ticket 25: the table is in `tickets/25-final-scores.md` (from `make final-scores`, `runs/final_scores_20261115_200602`).
-Open: Khoi approves the numbers. 17: CI is green and the README is written; left are Khoi's video (README
-placeholder), ticket 05 and the separate ask to make the repo public. 16 (image policy): not started; needs the v2
-design ported to images and Colab or Kaggle (local GPU: GTX 1650, 4 GB).
+All original tickets are closed except 17's last item: making the repo public (Khoi asks later). 16 is done
+(see the table; Kaggle run in `runs/image_v2_policy_kaggle_20261116`, arrays in `runs/image_v2_arrays_copies_20261116`,
+upload folder `runs/kaggle_image_v2_20261116`). A human-only image run was started locally and stopped at epoch 38
+of 100 (not needed for the plan; its folder `runs/image_v2_policy_20261116_*` has no policy.pt).
 Held-out seeds 10000-10099 are scored only at the checkpoints in 21, 22, 23 and 25; everything else uses
 development seeds.
 Khoi: ticket 05 when convenient (never screen-record during a record session). The demonstration video is Khoi's own screen recording

@@ -20,3 +20,8 @@ Kind: HITL
   is; the video section is a placeholder until Khoi's own screen recording of `make policy-demo` exists.
 - Open: the video (Khoi), ticket 05, Khoi's approval of the ticket 25 numbers, and making the repo public (a
   separate ask).
+
+## Update 2026-11-16
+- Ticket 25 numbers approved by Khoi; ticket 16 done (image policy 97/100 held-out, README section).
+- Video: Khoi's 66 s recording of `make policy-demo` is committed as `docs/media/policy-demo.mp4` and linked from the
+  README (gitignore exception for `docs/media/*.mp4`). Making the repo public: Khoi will ask later; not done.
