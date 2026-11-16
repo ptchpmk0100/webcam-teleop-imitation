@@ -181,10 +181,14 @@ class PolicyV2:
     """Harness policy (Env observation dict -> 6 joint targets) around a network `actions_fn` ((B, 6) -> (B, H, 4)).
 
     `execute`: "ensemble" blends all recent chunks every step; an integer k re-plans every k steps and plays the
-    chunk's targets open loop in between."""
+    chunk's targets open loop in between.
 
-    def __init__(self, actions_fn, m: float = ENSEMBLE_M, execute="ensemble", controller=None) -> None:
+    `observe(obs, joints, ee)` returns the tuple of batched inputs for `actions_fn`; the default is the state policy's
+    cube-relative features. The image policy (image_policy_v2) passes the camera image and the arm state instead."""
+
+    def __init__(self, actions_fn, m: float = ENSEMBLE_M, execute="ensemble", controller=None, observe=None) -> None:
         self._actions, self._m, self._execute = actions_fn, m, execute
+        self._observe = observe or (lambda obs, joints, ee: (features(joints, obs["cube_pose"], ee)[None],))
         self._controller = _controller() if controller is None else controller
         self.reset()
 
@@ -199,7 +203,7 @@ class PolicyV2:
         t = self._t
         replan = self._execute == "ensemble" or not self._chunks or t - self._chunks[-1][0] >= int(self._execute)
         if replan:
-            out = np.asarray(self._actions(features(joints, obs["cube_pose"], ee)[None])[0], float)
+            out = np.asarray(self._actions(*self._observe(obs, joints, ee))[0], float)
             self._chunks.append((t, ee + out[:, :3], 1.0 / (1.0 + np.exp(-out[:, 3]))))
         horizon = len(self._chunks[-1][1])
         self._chunks = [c for c in self._chunks if t - c[0] < horizon]

@@ -31,10 +31,28 @@ What the numbers do and do not say:
   100, 100, 100 with copies.
 - Teleop baseline (human with grasp assist, counted live while recording, not recomputable because failed attempts
   were not saved): 30 of 30 attempts lifted, median 8.0 s (first 25 demos); 56 of 58, median 6.9 s (largest session).
-- The task is one cube on a table in simulation, with the cube pose given to the policy. Nothing here was run on a
-  real arm. An image policy (camera input in place of the cube pose) is written but not trained or scored yet.
+- The task is one cube on a table in simulation. The state policy is given the cube pose; the image policy below is
+  not. Nothing here was run on a real arm.
 - The first policy design scored 0/100 on the same demos (absolute joint targets, short chunks). The re-design and
   its gates are in [docs/research/PRD-v2.md](docs/research/PRD-v2.md).
+
+## Image policy (camera instead of the cube pose)
+
+Same design and same rollout as the state policy v2, but the network sees the 96x128 policy-camera image and the arm's
+own joints, never the cube pose. Trained once (training seed 0) on the same 100 human demos + transformed copies
+(97,179 frames, free Kaggle T4, 40 epochs, 20 minutes), **policy alone**, no assist:
+
+| set | lifted | 95% interval |
+|---|---|---|
+| 100 development cube positions | 97/100 | 0.92-0.99 |
+| 100 held-out cube positions (scored once) | 97/100 | 0.92-0.99 |
+
+```
+python -m teleop_il.train_image_v2 score runs/image_v2_policy_kaggle_20261116 [--held-out]
+```
+
+One training seed only, so unlike the state-policy table this is not a spread over seeds. There is no C++ port of the
+image policy, and it is not in `make final-scores`.
 
 ## Video
 
