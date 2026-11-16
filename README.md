@@ -107,6 +107,16 @@ python -m teleop_il.train_image_v2 score models/image_policy_v2 [--held-out]
 | `tests/` | 287 tests, run by CI on every push |
 | [`docs/research/`](docs/research/) | design, decisions and the evidence for each step (start with `HANDOFF.md`) |
 
+## Skills and technologies
+
+| area | what this project shows |
+|---|---|
+| **Robot learning** | imitation learning, behavior cloning, learning from demonstration, visuomotor policy, action chunking with temporal ensembling (ACT-style), demonstration data augmentation, closed-loop policy evaluation |
+| **Computer vision** | real-time hand tracking (MediaPipe), webcam teleoperation, CNN with spatial-softmax keypoints, image-based policy, rendered-image datasets |
+| **Robotics** | MuJoCo simulation, SO-101 robot arm, pick-and-place manipulation, inverse kinematics (mink), end-effector control, grasp assist, teleoperation interface |
+| **ML engineering** | PyTorch, ONNX export and ONNX Runtime inference, PyTorch/ONNX numerical parity checks, GPU training on Kaggle (Tesla T4), held-out evaluation with Wilson confidence intervals, null-policy sanity checks, reproducible seeds |
+| **Software engineering** | Python 3.12, C++17, CMake, Python/C++ cross-language parity testing, pytest (287 tests), GitHub Actions CI, uv, Makefile workflow, Linux |
+
 ## How it works
 
 1. **Teleop** (`make demo`): MediaPipe hand landmarks from the webcam move the gripper target; inverse kinematics
