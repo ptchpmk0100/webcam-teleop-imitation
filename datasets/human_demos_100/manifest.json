@@ -1,0 +1,1047 @@
+{
+ "format_version": 1,
+ "created": "2026-11-15T13:19:03",
+ "mujoco": "4.0.1",
+ "control_hz": 20,
+ "cleaning": {
+  "sources": [
+   {
+    "folder": "runs/demos_20261115_004601",
+    "manifest_sha256": "490e9efbb5ae31a3cb0f640d6c0bf0ec9b2a4920b0b5c953383f948c73f04682"
+   },
+   {
+    "folder": "runs/demos_20261115_005408",
+    "manifest_sha256": "41a04f357e0f1d0dd171a698e71c71cfb537a06c9fe89410d2eed17f988f2034"
+   },
+   {
+    "folder": "runs/demos_20261115_005620",
+    "manifest_sha256": "ab3939ae2a4d224e9715f889660009b8472a4b8f535797a2f80bc5dd25da64e6"
+   },
+   {
+    "folder": "runs/demos_20261115_010151",
+    "manifest_sha256": "c03d1b9d0188bc75030a950fed31c88c7f6fb5f256f257bb88076fec444a9071"
+   },
+   {
+    "folder": "runs/demos_20261115_095943",
+    "manifest_sha256": "5972b4a4a81d5562275c33a15a45f1e07436c0a52ba2a37c95107559ae96917e"
+   },
+   {
+    "folder": "runs/demos_20261115_104242",
+    "manifest_sha256": "f535da250e7062d64e6fa47503ee6e3845d5009e87a423e202924a5616d22255"
+   },
+   {
+    "folder": "runs/demos_20261115_104619",
+    "manifest_sha256": "26b6f1e2859fd3f679056b883659d7bed258a125f6ec98678bbca7ff7ccaf5e9"
+   }
+  ],
+  "method": "drop assist active at row 0; drop stale closed-gripper row 0",
+  "counts": {
+   "in": 112,
+   "dropped_auto_grasp": 12,
+   "dropped_stale_row0": 34,
+   "kept": 100
+  }
+ },
+ "episodes": [
+  {
+   "file": "episode_00000.npz",
+   "seed": 600,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 602,
+   "sha256": "9f321877e3bc3562465c01eec3d38e27bab9ae16fb78e39fb03b394f172dced0"
+  },
+  {
+   "file": "episode_00001.npz",
+   "seed": 601,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 306,
+   "sha256": "a9d9425b1f87800ed0b1111740f42cd41058b2ab9789e9ed795ae02e14305617"
+  },
+  {
+   "file": "episode_00002.npz",
+   "seed": 602,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 160,
+   "sha256": "801d74a81c14dbf40329cf79beb40a37a861c6732b06b650bd0763e691bd2a19"
+  },
+  {
+   "file": "episode_00003.npz",
+   "seed": 604,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 356,
+   "sha256": "fb8274709447e14e4e65e8a3f98192baeaa7ca20e42f8fc1ac5d1d1d3fc1c4d6"
+  },
+  {
+   "file": "episode_00004.npz",
+   "seed": 605,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 158,
+   "sha256": "2613748a33a396056975be74284fa5c8690c3d976ea23a2f37bd21ce2e16587f"
+  },
+  {
+   "file": "episode_00005.npz",
+   "seed": 606,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 174,
+   "sha256": "4bd9c463bb544df94a3dee7d961d023075181b724a3e5d3d9ad3365ce4d15d87"
+  },
+  {
+   "file": "episode_00006.npz",
+   "seed": 607,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 168,
+   "sha256": "1c65febc7942308551eff4eb1cdb896b7ee51320598d0d70b5ee2c3536a0976d"
+  },
+  {
+   "file": "episode_00007.npz",
+   "seed": 608,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 146,
+   "sha256": "b9ea4e92041d9ecc8ae13d67b0b3227fc6886005ed13c1e482c52e08cd7c4171"
+  },
+  {
+   "file": "episode_00008.npz",
+   "seed": 609,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 331,
+   "sha256": "5ebe302de93425f9fb6b0aa240ab7c470351c0b94ab6429dd959d5cfee9c44cc"
+  },
+  {
+   "file": "episode_00009.npz",
+   "seed": 611,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 313,
+   "sha256": "4b0c7d40d3399fc64ef4298590d19e3912222abd548f51acf3bcd2f7272406d8"
+  },
+  {
+   "file": "episode_00010.npz",
+   "seed": 613,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 180,
+   "sha256": "d5c5553a32834175fd59c4c704c68b8c907af44a3238983cd149c210d8bc67f8"
+  },
+  {
+   "file": "episode_00011.npz",
+   "seed": 614,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 165,
+   "sha256": "da445ee2318828165c3f67a4115d1ff219cf5769ad8bce4d452b53c70114e9a3"
+  },
+  {
+   "file": "episode_00012.npz",
+   "seed": 616,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 134,
+   "sha256": "4ef87c0e386c206fd312d9c8b824c7bcff7f16b1e446c317419e026a24736513"
+  },
+  {
+   "file": "episode_00013.npz",
+   "seed": 617,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 199,
+   "sha256": "4db8b278ce6d7826f451d25855e2c440b46bca12bbe5944aea3e190e37814ae3"
+  },
+  {
+   "file": "episode_00014.npz",
+   "seed": 622,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 158,
+   "sha256": "230c7f0552489c305bced4a94d21557de3acb252db2058f4460acf602e8ed3a8"
+  },
+  {
+   "file": "episode_00015.npz",
+   "seed": 623,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 156,
+   "sha256": "f18e9ee8d6264198175c925c5bcfbd4e503a7c5fcf0bbffe1fa304ccf79af27d"
+  },
+  {
+   "file": "episode_00016.npz",
+   "seed": 624,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 2,
+   "steps": 257,
+   "sha256": "a132f49c6f95aee1e9ac973636fd3ba6852e55b92579ba87c4185c3e60efb2d7"
+  },
+  {
+   "file": "episode_00017.npz",
+   "seed": 625,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 160,
+   "sha256": "524771db529a88736a45646b083900c726d8dfd3a420ef5ba1bad8b1fef8ec3e"
+  },
+  {
+   "file": "episode_00018.npz",
+   "seed": 626,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 129,
+   "sha256": "f37a320efb4e3250f14a7d7f29bdd9137580793cd84dc658dc5e1e7e6d4b4097"
+  },
+  {
+   "file": "episode_00019.npz",
+   "seed": 630,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 142,
+   "sha256": "724107156808feb4bf69c07e2f436c372b3b360b4c6649f406f1ceeb3599f0d3"
+  },
+  {
+   "file": "episode_00020.npz",
+   "seed": 631,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 192,
+   "sha256": "f7b5867674d656466adf07331469a8e8fef87c119b677b6ab21327fb88d3d9b3"
+  },
+  {
+   "file": "episode_00021.npz",
+   "seed": 633,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 148,
+   "sha256": "02d0eb436627fb347dd6b04249b8169f486f41ba3fe145884a76b88c24d8e59d"
+  },
+  {
+   "file": "episode_00022.npz",
+   "seed": 634,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 196,
+   "sha256": "de328e15f66eb8796bb207f2fc46548c9ad4d1dd438175fcddeb16361c6cae71"
+  },
+  {
+   "file": "episode_00023.npz",
+   "seed": 635,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 188,
+   "sha256": "796bdbb4c87314314bae2df10ccf699e026bcc3b399e11b58c9a8ad6d0c8084e"
+  },
+  {
+   "file": "episode_00024.npz",
+   "seed": 636,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 127,
+   "sha256": "1431db70d0d099247f502bed82f834ee2c743b92c2ac0014e7de42086fc19772"
+  },
+  {
+   "file": "episode_00025.npz",
+   "seed": 637,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 110,
+   "sha256": "99c587b6322dc466fc132dbf6e3f5cd3535b412961fbbe87da20bbf1dc071141"
+  },
+  {
+   "file": "episode_00026.npz",
+   "seed": 639,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 163,
+   "sha256": "ba982174c85b8571f3df9ffcc754c6356672e4747a015f95b8a7f1156f92d91a"
+  },
+  {
+   "file": "episode_00027.npz",
+   "seed": 641,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 96,
+   "sha256": "851bebe51e1f1c32d2656fbb6998ec6e911d3e5e769d59931588d7a14fef4fa3"
+  },
+  {
+   "file": "episode_00028.npz",
+   "seed": 643,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 173,
+   "sha256": "9be47fa74306c61300dc3e05d716d35d0e529cf6f25c76f66338b3b262fff6b5"
+  },
+  {
+   "file": "episode_00029.npz",
+   "seed": 644,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 134,
+   "sha256": "4e77a69ee188d67eec3eb898a0552f07a90b7987185c86f8bdc37906f1ac48de"
+  },
+  {
+   "file": "episode_00030.npz",
+   "seed": 645,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 147,
+   "sha256": "08b76ec6e222e004651588c632de9118b3f554453b0e5f01ad5b1ab41fc914ac"
+  },
+  {
+   "file": "episode_00031.npz",
+   "seed": 646,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 95,
+   "sha256": "dc75f2fc0720fb4030a4c6c91a0b4253cb3e1a150a28e0f1b5aa07934bdf9f73"
+  },
+  {
+   "file": "episode_00032.npz",
+   "seed": 647,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 99,
+   "sha256": "f77dc734ea43c36a6e28ea73be68480e048ebf605244530d7a1798efc77cc7f1"
+  },
+  {
+   "file": "episode_00033.npz",
+   "seed": 648,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 142,
+   "sha256": "2f2cf1a3a33fdbd0f5cfdd3a1082f5560fafbebdc3518c315caa7b4a6adabd15"
+  },
+  {
+   "file": "episode_00034.npz",
+   "seed": 649,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 179,
+   "sha256": "71c472375f7553628a38319af512bd1f6e5c525d15aac646f020384b85dcac09"
+  },
+  {
+   "file": "episode_00035.npz",
+   "seed": 651,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 102,
+   "sha256": "e4ce72845f4fdbdbed48f505d7ba97deef945e0f5c8ecedabb0b3357008b41f9"
+  },
+  {
+   "file": "episode_00036.npz",
+   "seed": 652,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 174,
+   "sha256": "df2bfe03bfb80ca96ea8418ab5641deedf3ba68f042f47655725f09d136d2837"
+  },
+  {
+   "file": "episode_00037.npz",
+   "seed": 654,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 160,
+   "sha256": "92460c73849ba5f57ee582fa395e195d98292e5e6f5e92489a1db64ffa23c285"
+  },
+  {
+   "file": "episode_00038.npz",
+   "seed": 655,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 199,
+   "sha256": "ee4699e4e38ddac17264ee6640d03ea78b17c9afe41e9afa0806a30cf37487f8"
+  },
+  {
+   "file": "episode_00039.npz",
+   "seed": 656,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 107,
+   "sha256": "30e38b748530c2f1e4403b2b8a51fd78dfaa36ebc920dc1f12ccfb2a13f20244"
+  },
+  {
+   "file": "episode_00040.npz",
+   "seed": 657,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 142,
+   "sha256": "1c85f2e9c3dc885d2990166977889e3eb8524c923070a21fc36bc77d1ae3fa78"
+  },
+  {
+   "file": "episode_00041.npz",
+   "seed": 658,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 179,
+   "sha256": "0c4604c60da71d9d444310e544d1d02baecab47e66bc6f8a85f565f139892627"
+  },
+  {
+   "file": "episode_00042.npz",
+   "seed": 660,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 124,
+   "sha256": "4dae11d9e2f0ea0865443185250f6646555ce163491d32341a2419eff9d89a2e"
+  },
+  {
+   "file": "episode_00043.npz",
+   "seed": 661,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 81,
+   "sha256": "e1fa524bffbc112a01930abf5284209260d3be05bfc33d9a16295a6afbd92c37"
+  },
+  {
+   "file": "episode_00044.npz",
+   "seed": 662,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 2,
+   "steps": 293,
+   "sha256": "b0c5c370b17990f5e6bc6be8d8ad67b8c4b6b34ebdb3c064bda2198834312daa"
+  },
+  {
+   "file": "episode_00045.npz",
+   "seed": 664,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 174,
+   "sha256": "416f8877b5d96746938b9b3ef05b1eddeef87b252292ca885d81faaa3322298d"
+  },
+  {
+   "file": "episode_00046.npz",
+   "seed": 665,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 129,
+   "sha256": "4b4d71a24b1d771ef52c2ab2be1ae4947c6528d7bbbbe795265a24a821c5f70b"
+  },
+  {
+   "file": "episode_00047.npz",
+   "seed": 666,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 189,
+   "sha256": "0d73b8a7511079468f26a1fa105427fa4a7e249ec69435072c69b1ddbc3a2538"
+  },
+  {
+   "file": "episode_00048.npz",
+   "seed": 667,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 88,
+   "sha256": "e10563f77ea3ebf34bb0ecbfc67b94d683cbf591029c23cea608114308068024"
+  },
+  {
+   "file": "episode_00049.npz",
+   "seed": 668,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 83,
+   "sha256": "dd775bfc90ae0a8b579d601d6375a1ac7df1ecbbbaefe2113d73020c3965e08a"
+  },
+  {
+   "file": "episode_00050.npz",
+   "seed": 669,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 149,
+   "sha256": "9ae0e2bb1967c8f01d39878348d7fc5b4e43f961a30678de3c1f22fb9da1b927"
+  },
+  {
+   "file": "episode_00051.npz",
+   "seed": 670,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 2,
+   "steps": 337,
+   "sha256": "1145a2fe00d4aecf0ff6321a05c485887cc7c4f72fc87e104a8de9d05638e581"
+  },
+  {
+   "file": "episode_00052.npz",
+   "seed": 671,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 162,
+   "sha256": "76d08b2046f1b72d6fa1a50af582a0a55324ae5648f91b2d1bbdbdf985bfc58f"
+  },
+  {
+   "file": "episode_00053.npz",
+   "seed": 674,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 183,
+   "sha256": "03633a9d4764e73cbd1051a130c3c9c3d52b5a013f3645887163d520053dabdb"
+  },
+  {
+   "file": "episode_00054.npz",
+   "seed": 675,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 89,
+   "sha256": "c64b63a51028cd2fbcf96175f7153d81270338a9503e395ec715958468f0da56"
+  },
+  {
+   "file": "episode_00055.npz",
+   "seed": 676,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 82,
+   "sha256": "eda1e7c33a9c63ca8098b4aefabbb8c8601a4b55f3aa5294d8cb743a00a8271a"
+  },
+  {
+   "file": "episode_00056.npz",
+   "seed": 677,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 79,
+   "sha256": "66515c0db1f89e6421cde5adde1a3946d6c0d56b037d8718920ffc9f1847f9cf"
+  },
+  {
+   "file": "episode_00057.npz",
+   "seed": 678,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 95,
+   "sha256": "c1cd06ab5944388a95a2a22c131909ddac5dffdb86ec2a8456fabcd5400b33dc"
+  },
+  {
+   "file": "episode_00058.npz",
+   "seed": 679,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 115,
+   "sha256": "1d2e9719200f0ad779650f6512e7e2028244cca992bbbbfb34ea989c973d4571"
+  },
+  {
+   "file": "episode_00059.npz",
+   "seed": 680,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 295,
+   "sha256": "ae8b9211195abe6cc805961d0540baa48f8b2dd4935d38196bbf581c232b4df9"
+  },
+  {
+   "file": "episode_00060.npz",
+   "seed": 681,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 103,
+   "sha256": "d09eb1f560175c6aba6373449bea983d87e6e71127105689150344e71cf8af43"
+  },
+  {
+   "file": "episode_00061.npz",
+   "seed": 682,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 82,
+   "sha256": "3aa4e5e4398cfd7a313a478b2ad59c33445463fe43f460a406f9812bdbce5dce"
+  },
+  {
+   "file": "episode_00062.npz",
+   "seed": 683,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 161,
+   "sha256": "5f45a982f0258c4718d96cd8071d7701a4828825830147a6f1a449a1f42482f1"
+  },
+  {
+   "file": "episode_00063.npz",
+   "seed": 684,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 145,
+   "sha256": "7ac4a4f76cf5d0b35b44d7016e184243b5c2af36db2c23a671e0b7ba97b2f6c2"
+  },
+  {
+   "file": "episode_00064.npz",
+   "seed": 685,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 100,
+   "sha256": "fed2463654f7df21d89175f9ec8df438bbc7c922bf70355437b6a95f18191b73"
+  },
+  {
+   "file": "episode_00065.npz",
+   "seed": 686,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 87,
+   "sha256": "e480a26657171a72792c17a42c0e8218dd3cc9b83854446e2b9ee4b150e5f5e3"
+  },
+  {
+   "file": "episode_00066.npz",
+   "seed": 687,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 87,
+   "sha256": "83a4b4d2d43ac58e494230f06419498112f19b7be0828a50795f8c100d80ebb9"
+  },
+  {
+   "file": "episode_00067.npz",
+   "seed": 689,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 122,
+   "sha256": "bca2e97f6e85defb567c6c1e2c073b28c3e7579ed2ed00912bc5ac0fbfa160cf"
+  },
+  {
+   "file": "episode_00068.npz",
+   "seed": 690,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 178,
+   "sha256": "0e065428d94ca123164d884271c5f29d492a1221fd58636e47e8242398090a4d"
+  },
+  {
+   "file": "episode_00069.npz",
+   "seed": 691,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 159,
+   "sha256": "927e6ceb6c8674792634eb776a0cd1cd67c56301a3f53f326e9d0a2943a0b2f3"
+  },
+  {
+   "file": "episode_00070.npz",
+   "seed": 693,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 144,
+   "sha256": "e7322da518e39fc1e0eeecedb56e501215c0cfea424bca6ddb940436335d87e8"
+  },
+  {
+   "file": "episode_00071.npz",
+   "seed": 694,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 103,
+   "sha256": "746c678ba6d8215a334bc3b4bf17b1120127e4f97aea15ef34210c319af9a55d"
+  },
+  {
+   "file": "episode_00072.npz",
+   "seed": 695,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 226,
+   "sha256": "d73d5512d0f1a5144049ea24fffeb770e6f96f67f4984b0d42da1e3327a09c6f"
+  },
+  {
+   "file": "episode_00073.npz",
+   "seed": 696,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 161,
+   "sha256": "96d8c3cfee287e30800080bb6c3c15c838918b6686d75db16af12d90738d4df8"
+  },
+  {
+   "file": "episode_00074.npz",
+   "seed": 697,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 197,
+   "sha256": "066b48157e3238c628baf081c60ba2980cbca82e1a8286dce6a688d2a002b29e"
+  },
+  {
+   "file": "episode_00075.npz",
+   "seed": 699,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 183,
+   "sha256": "426f217d8c2d68f50c8da1e46dd78f20b613f76a5bd2883b3587c67cb42731f3"
+  },
+  {
+   "file": "episode_00076.npz",
+   "seed": 700,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 158,
+   "sha256": "3654d0d7e5cbc59394bd82a22e78f656b18f972cccab31b49e98e7305435e952"
+  },
+  {
+   "file": "episode_00077.npz",
+   "seed": 701,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 167,
+   "sha256": "f877b05f6417c7a86d6fc2a6002e8bbcca9aa1a4dee74fe4252820bbb5f86f93"
+  },
+  {
+   "file": "episode_00078.npz",
+   "seed": 702,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 138,
+   "sha256": "162a2dae469954645ffe2db9989fb0bf695bc8bf73b45e43d725257dc988f40f"
+  },
+  {
+   "file": "episode_00079.npz",
+   "seed": 703,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 86,
+   "sha256": "6b82f593249bb51006895dd51cbe8fcba6b2c681d9dc1b1e2ae9d6ee0b3d85cd"
+  },
+  {
+   "file": "episode_00080.npz",
+   "seed": 704,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 81,
+   "sha256": "d098e845566be9bef9058a944e1cfc9c9d1dcfd62c7a748a08d2456333ae9306"
+  },
+  {
+   "file": "episode_00081.npz",
+   "seed": 705,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 138,
+   "sha256": "4a7d5e0c34c97d732b761fe46451fed68dceb00a6b4071e17e83d9135d3e77b2"
+  },
+  {
+   "file": "episode_00082.npz",
+   "seed": 706,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 240,
+   "sha256": "0de80535e1ca47db354cbfd372c73401f7d81a8b5e3cda830cdc55ead522d9c6"
+  },
+  {
+   "file": "episode_00083.npz",
+   "seed": 707,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 148,
+   "sha256": "b882cbec5d87bf35b539da77bf974c7f6b0e0433976a40b29a288b2ec0f3c461"
+  },
+  {
+   "file": "episode_00084.npz",
+   "seed": 708,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 144,
+   "sha256": "93cc2bb966680af58e438169cd56d6649dd2750745b32c4a32b8afdaee6a806c"
+  },
+  {
+   "file": "episode_00085.npz",
+   "seed": 709,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 128,
+   "sha256": "d8fe7aa4fcec24104b93c770bce401ef48e608862990fd1df0428469d371a742"
+  },
+  {
+   "file": "episode_00086.npz",
+   "seed": 710,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 181,
+   "sha256": "facc14f18732fee3206f3ba9cb0808810a2b60fa9e2a5421c9f5a1af8dce6eb3"
+  },
+  {
+   "file": "episode_00087.npz",
+   "seed": 711,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 171,
+   "sha256": "2a032444a177a1114170242ce13afd717d5f4b5d7f83527d9670d237c15c1f9d"
+  },
+  {
+   "file": "episode_00088.npz",
+   "seed": 712,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 154,
+   "sha256": "9bcb21e52438cd15642c4e05266b995f4dfc260591829d1fa84384f646b009b0"
+  },
+  {
+   "file": "episode_00089.npz",
+   "seed": 713,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 86,
+   "sha256": "3f45277c9e1755a1e450e78c326543beb2d02512883146b1be66409e21db11fb"
+  },
+  {
+   "file": "episode_00090.npz",
+   "seed": 714,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 218,
+   "sha256": "60409bcb255816efed64dc135eb531f8bf162652f5f8fcb8c2483b9f6fcad99c"
+  },
+  {
+   "file": "episode_00091.npz",
+   "seed": 715,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 108,
+   "sha256": "6a226b271cf9037af3fcee84de62b9bc2b73dc568fb48b5006470fc60c64fc32"
+  },
+  {
+   "file": "episode_00092.npz",
+   "seed": 716,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 136,
+   "sha256": "48b49eb33a8f9c2bb23092a979194b9de485fbafc946847e6e50dbae23a5d3fa"
+  },
+  {
+   "file": "episode_00093.npz",
+   "seed": 717,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 112,
+   "sha256": "b90672d8e4af6c909e2ffa796bdb29be41befbe16f5650b241cf75a53339bae7"
+  },
+  {
+   "file": "episode_00094.npz",
+   "seed": 718,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 137,
+   "sha256": "9cf55eef0d9d6fc5298111d33130348b9084057a0d8263437d7c26f293404dae"
+  },
+  {
+   "file": "episode_00095.npz",
+   "seed": 719,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 134,
+   "sha256": "dac52b4b9cffeba9cccb90460acfc989c2f5a8fada539fcf43c41e52df8aec6b"
+  },
+  {
+   "file": "episode_00096.npz",
+   "seed": 720,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 258,
+   "sha256": "498a29c6800e8a70452608a5ac3865800cfe729c4791a8a5c48823d9a6a98ef3"
+  },
+  {
+   "file": "episode_00097.npz",
+   "seed": 721,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 139,
+   "sha256": "e3d0577fe91146e4a45207c7575284e9b223e0c590f3c6ae73108f0429677e9f"
+  },
+  {
+   "file": "episode_00098.npz",
+   "seed": 722,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 92,
+   "sha256": "7e893d1f39bdf649026ffe9b32713e5e7cec5f844b4163fc35fc974dba8b3396"
+  },
+  {
+   "file": "episode_00099.npz",
+   "seed": 723,
+   "source": "human+assist",
+   "success": true,
+   "flagged": false,
+   "assist_fired": 1,
+   "steps": 90,
+   "sha256": "d263c373890a3e9fc7a6ecf2b77f7f7fea371a0b9b0708f19da2e1e382226d3d"
+  }
+ ]
+}

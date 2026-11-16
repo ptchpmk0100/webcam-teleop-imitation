@@ -71,6 +71,12 @@ Experiment scripts from the 0/100 investigation (cleaning, relabelling, lever sc
   `..._183708`, `..._184208`, `..._184605`, each 100/100.
 - Assets fetched by `make setup` into `assets/` (menagerie, hand model, ONNX Runtime 1.32.0, all pinned).
 
+## Published in the repository (2026-11-16)
+`models/` (6 state policies, 1 image policy: onnx, pt, run/score json), `datasets/` (100 human demos, 798 copies),
+`results/` (`make final-scores` raw output, without the 62 MB scene files), `docs/media/` (teleop and policy videos,
+GIF previews). Not published: `runs/` (renders, training arrays, Kaggle upload folder, raw sessions). Roadmap drafts
+(`ROADMAP-paths.md`, `PRD-v3.md`, `tickets/00-board-v3-draft.md`) stay local on purpose (Khoi, 2026-11-16).
+
 ## Commands
 `make test` | `make demo` (practice) | `make demo ARGS="--record --log runs/tryN.npz"` | `make trial` (10 counted) |
 `make diagnose LOG=...` | `make parity` (C++ physics) | `make policy-parity` (C++ ONNX policy) |

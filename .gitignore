@@ -19,3 +19,7 @@ data/
 assets/
 runs/
 build/
+
+# Published models and demos (small): tracked on purpose
+!models/**/*.onnx
+!models/**/*.pt
